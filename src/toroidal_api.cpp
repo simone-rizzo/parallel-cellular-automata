@@ -9,6 +9,7 @@ vector<int> get_neighborhood(vector<vector<int>>& matrix, pair<int,int> centre_i
 {
     vector<int> neighborhood(8);
     int neigh_num = 0;
+   
     int n = matrix.size();
     int m = matrix[0].size();
     int i = centre_index.first;
