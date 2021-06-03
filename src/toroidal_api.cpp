@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <tuple>
 #include <vector>
-#include <utility>
 using namespace std;
 
 vector<int> get_neighborhood(vector<vector<int>>& matrix, pair<int,int> centre_index)
