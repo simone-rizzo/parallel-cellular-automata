@@ -18,7 +18,7 @@ class CellularAutomata{
     
     size_t _n;
     size_t _m;
-    T** _matrix;
+    vector<vector<T>> _matrix;
     function<T(T, T[])> _rule;
     size_t _parallelism;
     size_t _nIterations;
@@ -73,7 +73,7 @@ class CellularAutomata{
         _workers.push_back([](){
             for(int i=0; i<_parallelism-1; i++){
                 T currState=getState();
-                T[] neighbors=getNeighbors();
+                vector<T> neighbors=getNeighbors();
                 _rule(neighbors);
                 //barrier 
             }
@@ -81,13 +81,13 @@ class CellularAutomata{
         
     }
 
-    T[] getNeighbors(){
+    vector<T> getNeighbors(){
 
     }
 
 
     public:
-    T** cellularAutomata(size_t n, size_t m, function<T(T, T[])> rule, T** initialState, size_t nIterations, size_t parallelism){
+    T** cellularAutomata(size_t n, size_t m, function<T(T, vector<T>)> rule, vector<vector<T>> initialState, size_t nIterations, size_t parallelism){
         _rule=rule;
         _n=n;
         _m=m;
