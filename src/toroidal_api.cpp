@@ -5,9 +5,9 @@
 #include <vector>
 using namespace std;
 
-vector<int> get_neighborhood(vector<vector<int>>& matrix, pair<int,int> centre_index)
+vector<int*> get_neighborhood(vector<vector<int>>& matrix, pair<int,int> centre_index)
 {
-    vector<int> neighborhood(8);
+    vector<int*> neighborhood(8);
     int neigh_num = 0;
    
     int n = matrix.size();
@@ -24,7 +24,7 @@ vector<int> get_neighborhood(vector<vector<int>>& matrix, pair<int,int> centre_i
             int za = (((z % m) + m) % m);
             if (qa != i || za != j) {
                 matrix[qa][za] = 1; //only for test
-                neighborhood[neigh_num] = (matrix[qa][za]);
+                neighborhood[neigh_num] = &(matrix[qa][za]);
             }
         }
     }
@@ -43,11 +43,19 @@ void printMatrix(vector<vector<int>> mat) {
 	}
 }
 
+/*
+    Test methods
+*/
 int main() {
 
     vector<vector<int>> matrix(4,vector<int>(3,0));
     pair<int, int> index = make_pair(0, 0);
-    vector<int> list = get_neighborhood(matrix,index);
+    vector<int*> list = get_neighborhood(matrix,index);
+    for (int i=0;i<list.size();i++)
+    {
+        cout<<*list[0]<<endl;
+    }
     printMatrix(matrix);
+
     return 0;
 }
