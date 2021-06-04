@@ -95,7 +95,7 @@ class CellularAutomata{
                     unique_lock<mutex> lock1(b1Mutex);
                     //counter increment
                     b1++;
-                    b1Condition.wait(lock1, [this]{
+                    b1Condition.wait(lock1, [&]{
                             return b1>0 && b1<_parallelism;
                         });
                     if(b1==_parallelism) b1=0;
