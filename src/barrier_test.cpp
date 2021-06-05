@@ -17,25 +17,26 @@ using namespace std;
 int main() {
     mutex b1Mutex;
     int b1 = 0;
+    int vectorLenght=10;
     condition_variable b1Condition;
-    vector<int> v(100, 1);
+    vector<int> v(vectorLenght, 1);
 
     mutex b2Mutex;
     int b2 = 0;
     condition_variable b2Condition;
 
-    int _parallelism = 12;
-    int range=ceil(100.0/double(_parallelism));
+    int _parallelism = 2;
+    int range=ceil(double(vectorLenght)/double(_parallelism));
     vector<vector<vector<int>>> collectorBuffer(_parallelism, vector<vector<int>>());
 
     vector<thread> threads(_parallelism);
     for (int i = 0; i < _parallelism; i++) {
-        threads[i] = thread([i,&b1, &b1Mutex,&b2,&b2Mutex, &_parallelism, &b1Condition, &b2Condition, range, &v, &collectorBuffer]() {
+        threads[i] = thread([&vectorLenght, i,&b1, &b1Mutex,&b2,&b2Mutex, &_parallelism, &b1Condition, &b2Condition, range, &v, &collectorBuffer]() {
             vector<int> buffer(range);
             for(int k=0; k<10; k++){
                 
-                for(int j=i*range; j<min(100, (range*(i+1))); j++){
-                    buffer[j%range]=v[(((j-1)%100)+100)%100]+v[j]+v[j%100];
+                for(int j=i*range; j<min(vectorLenght, (range*(i+1))); j++){
+                    buffer[j%range]=v[(((j-1)%vectorLenght)+vectorLenght)%vectorLenght]+v[j]+v[j%vectorLenght];
                 }
                 //srand(i);
                 //int wait_time = rand() % 10 + 1;
@@ -57,7 +58,7 @@ int main() {
                     }
                     //cout << "thread:" << i << " mi hanno svegliato: " << wait_time << endl;    
                 }
-                for(int j=i*range; j<min(100, (range*(i+1))); j++){
+                for(int j=i*range; j<min(vectorLenght, (range*(i+1))); j++){
                     v[j]=buffer[j%range];
                 }
                 //this_thread::sleep_for(std::chrono::seconds(wait_time));
