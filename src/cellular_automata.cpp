@@ -51,7 +51,7 @@ class CellularAutomata{
     void initEmitterCollector(){
         //TODO add emitter collector thread
         initWorkers();
-        for (int k = 0; k < 10; k++) {
+        for (int k = 0; k < _nIterations; k++) {
             int c=0;
             for (int i = 0; i < _parallelism; i++) {
                 int cnum = collectorBuffer[i].size() - 1;
@@ -74,30 +74,32 @@ class CellularAutomata{
     }
 
     void initRanges(){
-        auto size = _n * _m;
-        int workLoad = ceil(double(size) / double(_parallelism));
-        pair<int, int> wl_blocco = make_pair(workLoad / _m, workLoad % _m);
-        pair<int,int> index = make_pair(0,0);
-        for (int k = 0; k < _parallelism; k++) {
+        //We cosider the matrix in base _m like decines and units (sequence of blocks)
+        auto size = _n * _m; //matrix size
+        int workLoad = ceil(double(size) / double(_parallelism)); //Workload size for each thread Upper bounded
+
+        pair<int, int> wl_blocco = make_pair(workLoad / _m, workLoad % _m); //Workload size in the matrix
+        pair<int,int> index = make_pair(0,0); // Initial index position
+        for (int k = 0; k < _parallelism; k++) { //Loop assign ranges for each thread
             int i = index.first;
             int j = index.second;
-            int new_j = (j - 1 + wl_blocco.second) % _m;
-            int riporto = (j + wl_blocco.second) / _m;
-            int new_i = (i + riporto + wl_blocco.first);
-            if (new_i >= _n) {
+            int new_j = (((j - 1 + wl_blocco.second) % _m)+_m)%_m; //ending J 
+            int riporto = (j + wl_blocco.second) / _m; //carry as number of remaining cells
+            int new_i = (i + riporto + wl_blocco.first); //ending i
+            if (new_i >= _n) { //foundamental 
                 new_i = _n - 1;
                 new_j = _m - 1;
             }
-            //cout << i << " " << j << endl;
-            //cout << new_i << " " << new_j << endl;
+            _ranges[k] = {index,make_pair(new_i, new_j)}; // write the ranges of theads
             index.first =  new_i;
-            index.second = (new_j+1)%_m;
+            index.second = (new_j+1)%_m; //move to the next cell, for the new range start
+            
         }
     }
 
     void initWorkers(){
         for(size_t i=0; i<_parallelism; i++){
-            _workers[i]=thread([&](){
+            _workers[i]=thread([=](){
                 
                 range r=_ranges[i];
                 for(size_t j=0; j<_nIterations; j++){
@@ -174,8 +176,8 @@ class CellularAutomata{
         vector<T*> neighborhood(8);
         int neigh_num = 0;
     
-        int n = _matrix.size();
-        int m = _matrix[0].size();
+        int n = _n;
+        int m = _m;
         int i = centre_index.first;
         int j = centre_index.second;
 
@@ -188,7 +190,8 @@ class CellularAutomata{
                 int za = (((z % m) + m) % m);
                 if (qa != i || za != j) {
                     //matrix[qa][za] = 1; //only for test
-                    neighborhood[neigh_num] = &(_matrix[qa][za]);
+                    neighborhood[neigh_num++] = &(_matrix[qa][za]);
+
                 }
             }
         }

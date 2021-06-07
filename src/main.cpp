@@ -14,9 +14,10 @@
 using namespace std;
 
 int rule(int s, vector<int*> vect){
-    for(int i=0;i<vect.size();i++)
+    for(int i=0; i<vect.size();i++)
     {
-        s+=*vect[i];
+        int num = *vect[i];
+        s+=num;
     }
     return s;
 }
@@ -26,8 +27,8 @@ int main(){
     function<int(int,vector<int*>)> f = rule;
     CellularAutomata<int> mcA(4, 5, f,
        m,
-        3,
-        3
+        6,
+        4
     );
 
     return 0;
