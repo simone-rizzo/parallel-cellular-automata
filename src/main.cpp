@@ -28,7 +28,7 @@ int main(){
     CellularAutomata<int> mcA(4, 5, f,
        m,
         6,
-        4
+        5
     );
 
     return 0;

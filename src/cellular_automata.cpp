@@ -51,18 +51,18 @@ class CellularAutomata{
     void initEmitterCollector(){
         //TODO add emitter collector thread
         initWorkers();
-        for (int k = 0; k < _nIterations; k++) {
+        for (int k = 0; k < _nIterations; k++) { //for each iteration
             int c=0;
-            for (int i = 0; i < _parallelism; i++) {
+            for (int i = 0; i < _parallelism; i++) { //for each worker
                 int cnum = collectorBuffer[i].size() - 1;
-                while (cnum  < k) {
+                while (cnum  < k) { //while the kth result isn't arrived wait
                     cnum = collectorBuffer[i].size() - 1;
                 }
-                //pair<int, int> curr = make_pair(0,0); curr<make_pair(_n,_m);increment(curr)
-                for (auto x : collectorBuffer[i][k]) {
+                for (auto x : collectorBuffer[i][k]) { 
+                    //for each item in the buffer of the kth iteration of thread i
                     cout << x << " ";
-                    c++;
-                    if(c%_m==0)
+                    c++; 
+                    if(c%_m==0) //to write as a matrix
                         cout<<endl;
                 }
             }
@@ -83,16 +83,19 @@ class CellularAutomata{
         for (int k = 0; k < _parallelism; k++) { //Loop assign ranges for each thread
             int i = index.first;
             int j = index.second;
-            int new_j = (((j - 1 + wl_blocco.second) % _m)+_m)%_m; //ending J 
-            int riporto = (j + wl_blocco.second) / _m; //carry as number of remaining cells
-            int new_i = (i + riporto + wl_blocco.first); //ending i
-            if (new_i >= _n) { //foundamental 
-                new_i = _n - 1;
-                new_j = _m - 1;
+
+            int endj = (((j - 1 + wl_blocco.second) % _m)+_m)%_m; //ending J 
+            int carry = (j - 1 + wl_blocco.second) / _m; //carry as number of remaining cells
+            int endi = (i + carry + wl_blocco.first); //ending i
+            if (endi >= _n) { //foundamental 
+                endi = _n - 1;
+                endj = _m - 1;
             }
-            _ranges[k] = {index,make_pair(new_i, new_j)}; // write the ranges of theads
-            index.first =  new_i;
-            index.second = (new_j+1)%_m; //move to the next cell, for the new range start
+            _ranges[k] = {index, make_pair(endi, endj)}; // write the ranges of theads
+            carry=0;
+            index.second = (((endj+1)% _m)+_m)%_m; //move to the next cell, for the new range start
+            carry = (endj+1) / _m;
+            index.first =  endi + carry;
             
         }
     }
@@ -105,6 +108,7 @@ class CellularAutomata{
                 for(size_t j=0; j<_nIterations; j++){
                     vector<T> buffer;
                     for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
+                        //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
                         T currState=_matrix[curr.first][curr.second];
                         vector<T*> neighbors=getNeighbors(curr);
                         buffer.push_back(_rule(currState, neighbors));
@@ -208,8 +212,8 @@ class CellularAutomata{
         //TODO: if less than 2 error
         _parallelism=parallelism;
         _nIterations=nIterations;
-        _workers.reserve(parallelism);
-        _ranges.reserve(parallelism);
+        _workers=vector<thread>(_parallelism);
+        _ranges=vector<range>(_parallelism);
         collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>());
         init();
     }
