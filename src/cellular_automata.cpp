@@ -7,15 +7,15 @@
 #include <cmath>
 #include <mutex>
 #include <condition_variable>
-
+#include "barrier.cpp"
+#include <algorithm>
+#include <fstream>
 
 using namespace std;
 
 struct range{
     pair<int, int> start;
     pair<int, int> end;
-
-    
 };
 
 template<class T>
@@ -32,12 +32,14 @@ class CellularAutomata{
     //thread _emitter;
     vector<thread> _workers;
     vector<range> _ranges;
-    int b1=0;
+    /*int b1=0;
     mutex b1Mutex;
-    condition_variable b1Condition;
-    int b2=0;
+    condition_variable b1Condition;*/
+    Barrier b1;
+    Barrier b2;
+    /*int b2=0;
     mutex b2Mutex;
-    condition_variable b2Condition;
+    condition_variable b2Condition;*/
     
     vector<vector<vector<T>>> collectorBuffer;
 
@@ -51,7 +53,7 @@ class CellularAutomata{
     void initEmitterCollector(){
         //TODO add emitter collector thread
         initWorkers();
-        for (int k = 0; k < _nIterations; k++) { //for each iteration
+        /*for (int k = 0; k < _nIterations; k++) { //for each iteration
             int c=0;
             for (int i = 0; i < _parallelism; i++) { //for each worker
                 int cnum = collectorBuffer[i].size() - 1;
@@ -67,7 +69,7 @@ class CellularAutomata{
                 }
             }
             cout << endl;
-        }
+        }*/
 
         for (int i = 0; i < _parallelism; i++)
             _workers[i].join();
@@ -119,21 +121,43 @@ class CellularAutomata{
                     collectorBuffer[i].push_back(buffer);
                     
                     //first barrier
-                    computationBarrier();
-                    
+                    //computationBarrier();
+                    b1.wait();
+
                     //write
                     writeBufferInMatrix(buffer, r);
                     
                     //second barrier
-                    writingBarrier();
-                    
+                    //writingBarrier();
+                    b2.wait();
                     
                 }
+                int nprint=ceil(double(_nIterations) / double(_parallelism));
+                //if(i==1){
+                    
+                    for(int k=i*nprint; k<min(int(_nIterations), (int(i)*nprint)+nprint); k++){
+                        ofstream myfile;
+                        myfile.open (to_string(k) + ".txt");
+                        
+                        int c=0;
+                        for (int j = 0; j < _parallelism; j++) { //for each worker
+                            for (auto x : collectorBuffer[j][k]) { 
+                                //for each item in the buffer of the kth iteration of thread i
+                                myfile << x << " ";
+                                c++; 
+                                if(c%_m==0) //to write as a matrix
+                                    myfile<<endl;
+                            }
+                        }
+                        myfile << endl;      
+                        myfile.close();
+                    }
+                //}
             });
         }
     }
 
-    void computationBarrier(){
+    /*void computationBarrier(){
         unique_lock<mutex> lock1(b1Mutex);
         //counter increment
         b1++;
@@ -145,9 +169,9 @@ class CellularAutomata{
             b1 = 0;
             b1Condition.notify_all();
         }
-    }
+    }*/
 
-    void writingBarrier(){
+    /*void writingBarrier(){
         unique_lock<mutex> lock2(b2Mutex);
         //counter increment
         b2++;
@@ -158,7 +182,7 @@ class CellularAutomata{
             b2 = 0;
             b2Condition.notify_all();
         }
-    }
+    }*/
 
     void writeBufferInMatrix(vector<T>& buffer, range r){
         size_t k=0;
@@ -202,7 +226,6 @@ class CellularAutomata{
         return neighborhood;
     }
 
-
     public:
     CellularAutomata(size_t n, size_t m, function<T(T, vector<T*>)> rule, vector<vector<T>>& initialState, size_t nIterations, size_t parallelism){
         _rule=rule;
@@ -214,6 +237,8 @@ class CellularAutomata{
         _nIterations=nIterations;
         _workers=vector<thread>(_parallelism);
         _ranges=vector<range>(_parallelism);
+        b1=Barrier(_parallelism);
+        b2=Barrier(_parallelism);
         collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>());
         init();
     }

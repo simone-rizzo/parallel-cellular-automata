@@ -10,6 +10,7 @@
 #include <chrono>
 #include <functional>
 #include "./cellular_automata.cpp"
+//#include "../fastflow/ff/ff.hpp"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ int main(){
     CellularAutomata<int> mcA(4, 5, f,
        m,
         6,
-        5
+        4
     );
 
     return 0;
