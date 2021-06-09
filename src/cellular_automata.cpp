@@ -9,9 +9,16 @@
 #include <condition_variable>
 #include "barrier.cpp"
 #include <algorithm>
-#include <fstream>
+#include <string>
+#include <cstring>
+#include "jpeglib.h"
+#define cimg_use_jpeg
+#include "./cimg/CImg.h"
+#include <cstdint>
+#include <cassert>
 
 using namespace std;
+using namespace cimg_library;
 
 struct range{
     pair<int, int> start;
@@ -133,26 +140,27 @@ class CellularAutomata{
                     
                 }
                 int nprint=ceil(double(_nIterations) / double(_parallelism));
-                //if(i==1){
+                for(int k=i*nprint; k<min(int(_nIterations), (int(i)*nprint)+nprint); k++){
                     
-                    for(int k=i*nprint; k<min(int(_nIterations), (int(i)*nprint)+nprint); k++){
-                        ofstream myfile;
-                        myfile.open (to_string(k) + ".txt");
-                        
-                        int c=0;
-                        for (int j = 0; j < _parallelism; j++) { //for each worker
-                            for (auto x : collectorBuffer[j][k]) { 
-                                //for each item in the buffer of the kth iteration of thread i
-                                myfile << x << " ";
-                                c++; 
-                                if(c%_m==0) //to write as a matrix
-                                    myfile<<endl;
-                            }
+                    CImg<unsigned char> img(_n,_m); //create new image                    
+                    int c=0;
+                    for (int j = 0; j < _parallelism; j++) { //for each worker
+                        for (auto x : collectorBuffer[j][k]) { 
+                            //for each item in the buffer of the kth iteration of thread i
+                            img(c/_m,c%_m)=x%256;
+                            c++; 
                         }
-                        myfile << endl;      
-                        myfile.close();
-                    }
-                //}
+                    }    
+                    /*string filename = to_string(k)+".png";
+                    unsigned char name_arr[1024];
+                    strcpy((char*)name_arr,filename.c_str());*/
+                    string filename=to_string(k)+".png";
+                    char b[filename.size()+1];
+                    strcpy(b, filename.c_str());
+                    //const char nuovo[] = filename.c_str();
+                    //unsigned char* uCharArr = reinterpret_cast<unsigned char*>(filename.c_str());
+                    img.save_png(b);
+                }
             });
         }
     }

@@ -10,10 +10,10 @@
 #include <chrono>
 #include <functional>
 #include "./cellular_automata.cpp"
+
 //#include "../fastflow/ff/ff.hpp"
 
 using namespace std;
-
 int rule(int s, vector<int*> vect){
     for(int i=0; i<vect.size();i++)
     {
@@ -31,7 +31,6 @@ int main(){
         6,
         4
     );
-
     return 0;
 
 }
