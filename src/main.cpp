@@ -8,42 +8,59 @@
 #include <mutex>
 #include <condition_variable>
 #include <chrono>
+#include <functional>
+#include "./cellular_automata.cpp"
 
+//#include "../fastflow/ff/ff.hpp"
 
 using namespace std;
+int rule(int s, vector<int*> vect){
+    int sum = 0;
+    for(int i=0; i<vect.size();i++)
+    {
+        sum += *vect[i];
+    }
+    if(sum==3)
+    {
+        return 1;
+    }
+    if(s==1 && (sum==3 || sum==2))
+    {
+        return s;
+    }
+    if((sum == 0 || sum == 1)|| sum >3)
+    {
+        return 0;
+    }
+}
 
-struct range{
-    pair<int, int> start;
-    pair<int, int> end;
-};
+void init_matrix(vector<vector<int>>& matrix, int n, int m)
+{
+    for(int i=0;i<n;i++){
+        for(int j=0;j<m;j++){
+           int v1 = rand() % 10;
+           if(v1>6){
+               matrix[i][j]=1;
+           } 
+           else{
+               matrix[i][j]=0;
+           }
+        }
+    }
+}
+
 
 int main(){
-    mutex b1Mutex;
-    int b1 = 0;
-    condition_variable b1Condition;
-    int _parallelism = 5;
-    vector<thread> threads(_parallelism);
-    for (int i = 0; i < 5; i++) {
-        threads[i] = thread([i,&b1, &b1Mutex, &_parallelism, &b1Condition]() {
-            int wait_time = rand() % 10 + 1;
-            cout << "thread:" << i << " attende: " << wait_time << endl;
-            this_thread::sleep_for(std::chrono::seconds(wait_time));
-            //fine della computazione
-            unique_lock<mutex> lock1(b1Mutex);
-            //counter increment
-            b1++;
-            b1Condition.wait(lock1, [&]() {
-                return !(b1 > 0 && b1 < _parallelism);
-            });
-            cout << "thread:" << i << " mi hanno svegliato: " << wait_time << endl;
-            if (b1 == _parallelism) {
-                cout << "Sono l'ultimo thread: " << i << endl;
-                b1 = 0;
-                b1Condition.notify_all();
-            }
-            lock1.release();
-            });
-    }
+    int n=100;
+    int m=100;
+    vector<vector<int>> matrix(n,vector<int>(m));
+    init_matrix(matrix,n,m);
+    function<int(int,vector<int*>)> f = rule;
+    CellularAutomata<int> mcA(n, m, f,
+       matrix,
+        400,
+        7
+    );
     return 0;
 
 }
