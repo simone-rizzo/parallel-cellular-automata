@@ -147,18 +147,14 @@ class CellularAutomata{
                     for (int j = 0; j < _parallelism; j++) { //for each worker
                         for (auto x : collectorBuffer[j][k]) { 
                             //for each item in the buffer of the kth iteration of thread i
-                            img(c/_m,c%_m)=x%256;
+                            img(c/_m,c%_m)=x>0?255:0;
                             c++; 
                         }
                     }    
-                    /*string filename = to_string(k)+".png";
-                    unsigned char name_arr[1024];
-                    strcpy((char*)name_arr,filename.c_str());*/
-                    string filename=to_string(k)+".png";
+                    string filename="./frames/"+to_string(k)+".png";
                     char b[filename.size()+1];
                     strcpy(b, filename.c_str());
-                    //const char nuovo[] = filename.c_str();
-                    //unsigned char* uCharArr = reinterpret_cast<unsigned char*>(filename.c_str());
+                    img.resize(1000,1000);
                     img.save_png(b);
                 }
             });

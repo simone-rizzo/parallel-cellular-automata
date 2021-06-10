@@ -15,21 +15,50 @@
 
 using namespace std;
 int rule(int s, vector<int*> vect){
+    int sum = 0;
     for(int i=0; i<vect.size();i++)
     {
-        int num = *vect[i];
-        s+=num;
+        sum += *vect[i];
     }
-    return s;
+    if(sum==3)
+    {
+        return 1;
+    }
+    if(s==1 && (sum==3 || sum==2))
+    {
+        return s;
+    }
+    if((sum == 0 || sum == 1)|| sum >3)
+    {
+        return 0;
+    }
+}
+
+void init_matrix(vector<vector<int>>& matrix, int n, int m)
+{
+    for(int i=0;i<n;i++){
+        for(int j=0;j<m;j++){
+           int v1 = rand() % 10;
+           if(v1>6){
+               matrix[i][j]=1;
+           } 
+           else{
+               matrix[i][j]=0;
+           }
+        }
+    }
 }
 
 int main(){
-    vector<vector<int>> m(4,vector<int>(5,1));
+    int n=100;
+    int m=100;
+    vector<vector<int>> matrix(n,vector<int>(m));
+    init_matrix(matrix,n,m);
     function<int(int,vector<int*>)> f = rule;
-    CellularAutomata<int> mcA(4, 5, f,
-       m,
-        6,
-        4
+    CellularAutomata<int> mcA(n, m, f,
+       matrix,
+        400,
+        7
     );
     return 0;
 
