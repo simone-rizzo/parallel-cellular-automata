@@ -32,6 +32,7 @@ int rule(int s, vector<int*> vect){
     {
         return 0;
     }
+    return 0;
 }
 
 void init_matrix(vector<vector<int>>& matrix, int n, int m)

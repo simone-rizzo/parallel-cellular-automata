@@ -138,10 +138,13 @@ class CellularAutomata{
                     //writingBarrier();
                     b2.wait();
                     
-                }
+                } 
                 int nprint=ceil(double(_nIterations) / double(_parallelism));
-                for(int k=i*nprint; k<min(int(_nIterations), (int(i)*nprint)+nprint); k++){
-                    
+                int start=i*nprint;
+                int end= min(int(_nIterations), (int(i)+1) * nprint);
+                //string s="thread: "+to_string(i)+" start: "+to_string(start)+" end: " +to_string(end);
+                //cout<<s<<endl;
+                for(int k=start; k<end; k++){
                     CImg<unsigned char> img(_n,_m); //create new image                    
                     int c=0;
                     for (int j = 0; j < _parallelism; j++) { //for each worker
@@ -154,7 +157,7 @@ class CellularAutomata{
                     string filename="./frames/"+to_string(k)+".png";
                     char b[filename.size()+1];
                     strcpy(b, filename.c_str());
-                    img.resize(1000,1000);
+                    //img.resize(1000,1000);
                     img.save_png(b);
                 }
             });
