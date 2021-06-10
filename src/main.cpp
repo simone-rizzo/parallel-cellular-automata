@@ -50,6 +50,7 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
     }
 }
 
+
 int main(){
     int n=100;
     int m=100;

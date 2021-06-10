@@ -13,10 +13,13 @@
 #include "barrier.cpp"
 #include <algorithm>
 #include <fstream>
-#include <ff/stencilReduce.hpp>
+#include <ff/parallel_for.hpp>
 
-using namespace ff;
+#define cimg_use_jpeg
+#include "./cimg/CImg.h"
+
 using namespace std;
+using namespace cimg_library;
 
 struct range{
     pair<int, int> start;
@@ -28,7 +31,7 @@ class CellularAutomata{
     
     size_t _n;
     size_t _m;
-    vector<vector<T>> _matrix;
+    vector<vector<vector<T>>> _matrix;
     function<T(T, vector<T*>)> _rule;
     size_t _parallelism;
     size_t _nIterations;
@@ -45,6 +48,8 @@ class CellularAutomata{
     /*int b2=0;
     mutex b2Mutex;
     condition_variable b2Condition;*/
+
+    ff::ParallelFor* pf;
     
     vector<vector<vector<T>>> collectorBuffer;
 
@@ -58,26 +63,6 @@ class CellularAutomata{
     void initEmitterCollector(){
         //TODO add emitter collector thread
         initWorkers();
-        /*for (int k = 0; k < _nIterations; k++) { //for each iteration
-            int c=0;
-            for (int i = 0; i < _parallelism; i++) { //for each worker
-                int cnum = collectorBuffer[i].size() - 1;
-                while (cnum  < k) { //while the kth result isn't arrived wait
-                    cnum = collectorBuffer[i].size() - 1;
-                }
-                for (auto x : collectorBuffer[i][k]) { 
-                    //for each item in the buffer of the kth iteration of thread i
-                    cout << x << " ";
-                    c++; 
-                    if(c%_m==0) //to write as a matrix
-                        cout<<endl;
-                }
-            }
-            cout << endl;
-        }*/
-
-        for (int i = 0; i < _parallelism; i++)
-            _workers[i].join();
     }
 
     void initRanges(){
@@ -101,92 +86,45 @@ class CellularAutomata{
             carry=0;
             index.second = (((endj+1)% _m)+_m)%_m; //move to the next cell, for the new range start
             carry = (endj+1) / _m;
-            index.first =  endi + carry;
-            
+            index.first =  endi + carry;            
         }
     }
 
     void initWorkers(){
-        for(size_t i=0; i<_parallelism; i++){
-            _workers[i]=thread([=](){
-                
+
+        bool b=0;
+        for(int f=0;f<_nIterations;f++){
+            (*pf).parallel_for_static(0,_ranges.size(),1,0,[=](const long i) {
                 range r=_ranges[i];
-                for(size_t j=0; j<_nIterations; j++){
-                    vector<T> buffer;
-                    for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
-                        //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
-                        T currState=_matrix[curr.first][curr.second];
-                        vector<T*> neighbors=getNeighbors(curr);
-                        buffer.push_back(_rule(currState, neighbors));
-                    }
-                   
-                    
-                    //write buffer to the collector queue
-                    collectorBuffer[i].push_back(buffer);
-                    
-                    //first barrier
-                    //computationBarrier();
-                    b1.wait();
-
-                    //write
-                    writeBufferInMatrix(buffer, r);
-                    
-                    //second barrier
-                    //writingBarrier();
-                    b2.wait();
-                    
-                }
-                int nprint=ceil(double(_nIterations) / double(_parallelism));
-                //if(i==1){
-                    
-                    for(int k=i*nprint; k<min(int(_nIterations), (int(i)*nprint)+nprint); k++){
-                        ofstream myfile;
-                        myfile.open (to_string(k) + ".txt");
-                        
-                        int c=0;
-                        for (int j = 0; j < _parallelism; j++) { //for each worker
-                            for (auto x : collectorBuffer[j][k]) { 
-                                //for each item in the buffer of the kth iteration of thread i
-                                myfile << x << " ";
-                                c++; 
-                                if(c%_m==0) //to write as a matrix
-                                    myfile<<endl;
-                            }
+                vector<T> buffer;
+                for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
+                        T currState=_matrix[b][curr.first][curr.second];
+                        vector<T*> neighbors=getNeighbors(curr, b);
+                        int new_value = _rule(currState, neighbors);
+                        _matrix[!b][curr.first][curr.second]=new_value;
+                        buffer.push_back(_rule(currState, neighbors));           
+                    }                
+                collectorBuffer[i].push_back(buffer);               
+            },_parallelism);
+            b=!b;
+        }
+        (*pf).parallel_for_static(0,_nIterations,1,0,[=](const long i) {
+             CImg<unsigned char> img(_n,_m); //create new image                    
+                    int c=0;
+                    for (int j = 0; j < _parallelism; j++) { //for each worker
+                        for (auto x : collectorBuffer[j][i]) { 
+                            //for each item in the buffer of the kth iteration of thread i
+                            img(c/_m,c%_m)=x>0?255:0;
+                            c++; 
                         }
-                        myfile << endl;      
-                        myfile.close();
-                    }
-                //}
-            });
-        }
+                    }    
+                    string filename="./frames/"+to_string(i)+".png";
+                    char b[filename.size()+1];
+                    strcpy(b, filename.c_str());
+                    img.save_png(b);     
+        },_parallelism);
+        
     }
-
-    /*void computationBarrier(){
-        unique_lock<mutex> lock1(b1Mutex);
-        //counter increment
-        b1++;
-        b1Condition.wait(lock1, [&]() {
-            return !(b1 != 0 && b1 != _parallelism);
-            });
-        if (b1 == _parallelism) {
-            //cout << "Sono l'ultimo thread: " << i << endl;
-            b1 = 0;
-            b1Condition.notify_all();
-        }
-    }*/
-
-    /*void writingBarrier(){
-        unique_lock<mutex> lock2(b2Mutex);
-        //counter increment
-        b2++;
-        b2Condition.wait(lock2, [&]() {
-            return !(b2 != 0 && b2 != _parallelism);
-            });
-        if (b2 == _parallelism) {
-            b2 = 0;
-            b2Condition.notify_all();
-        }
-    }*/
 
     void writeBufferInMatrix(vector<T>& buffer, range r){
         size_t k=0;
@@ -204,7 +142,7 @@ class CellularAutomata{
         pair.second=j;
     }
 
-    vector<T*> getNeighbors(pair<int,int> centre_index){
+    vector<T*> getNeighbors(pair<int,int> centre_index, int b){
         vector<T*> neighborhood(8);
         int neigh_num = 0;
     
@@ -222,7 +160,7 @@ class CellularAutomata{
                 int za = (((z % m) + m) % m);
                 if (qa != i || za != j) {
                     //matrix[qa][za] = 1; //only for test
-                    neighborhood[neigh_num++] = &(_matrix[qa][za]);
+                    neighborhood[neigh_num++] = &(_matrix[b][qa][za]);
 
                 }
             }
@@ -235,21 +173,88 @@ class CellularAutomata{
         _rule=rule;
         _n=n;
         _m=m;
-        _matrix=initialState;
+        _matrix=vector<vector<vector<int>>>(2, initialState);
         //TODO: if less than 2 error
         _parallelism=parallelism;
         _nIterations=nIterations;
         _workers=vector<thread>(_parallelism);
         _ranges=vector<range>(_parallelism);
-        b1=Barrier(_parallelism);
-        b2=Barrier(_parallelism);
+        pf = new ff::ParallelFor(_parallelism);        
+        (*pf).disableScheduler(true);
+        /*b1=Barrier(_parallelism);
+        b2=Barrier(_parallelism);*/
         collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>());
         init();
     }
 
 };
 
-int main(){
-    ff::ff_stenci
+
+
+void init_matrix(vector<vector<int>>& matrix, int n, int m)
+{
+    for(int i=0;i<n;i++){
+        for(int j=0;j<m;j++){
+           int v1 = rand() % 10;
+           if(v1>6){
+               matrix[i][j]=1;
+           } 
+           else{
+               matrix[i][j]=0;
+           }
+        }
+    }
+}
+
+int rule(int s, vector<int*> vect){
+    int sum = 0;
+    for(int i=0; i<vect.size();i++)
+    {
+        sum += *vect[i];
+    }
+    if(sum==3)
+    {
+        return 1;
+    }
+    if(s==1 && (sum==3 || sum==2))
+    {
+        return s;
+    }
+    if((sum == 0 || sum == 1)|| sum >3)
+    {
+        return 0;
+    }
     return 0;
 }
+
+
+int main(){ 
+    int n=100;
+    int m=100;
+    vector<vector<int>> matrix(n,vector<int>(m));
+    init_matrix(matrix,n,m);
+    function<int(int,vector<int*>)> f = rule;
+    CellularAutomata<int> mcA(n, m, f,
+       matrix,
+        400,
+        8
+    );
+}
+
+    /*int m=10;
+    vector<vector<int>> A(2,vector<int>(m,1));
+    ff::ParallelFor pf(8);
+    bool b=0;
+    pf.disableScheduler(true);
+    for(int f=0;f<4;f++){
+        pf.parallel_for_static(0,m,1,0,[&A, &m, &b](const long i) {
+            std::thread::id this_id = std::this_thread::get_id();
+            A[!b][i] = A[b][0]+A[b][(((i-1)%m)+m)%m]+A[b][(((i+1)%m)+m)%m];            
+        },8);
+        pf.parallel_for_static(0,m,1,0,[&A, &m, &b](const long i) {
+            string out = to_string(A[!b][i])+" ";
+            cout<<out;         
+        },8);
+        cout<<endl;
+        b=!b;
+    }*/
