@@ -16,6 +16,7 @@
 #include "./cimg/CImg.h"
 #include <cstdint>
 #include <cassert>
+#define PARALLEL_WRITE
 
 using namespace std;
 using namespace cimg_library;
@@ -42,7 +43,7 @@ class CellularAutomata{
     vector<thread> _workers;
     vector<range> _ranges;
 
-    //Barrier b1;
+    Barrier b1;
     Barrier b2;
 
     vector<vector<vector<T>>> collectorBuffer;
@@ -113,7 +114,7 @@ class CellularAutomata{
                     //write buffer to the collector queue      
                     collectorBuffer[i].push_back(buffer);
                     #endif
-
+                    b1.wait();
                     //second barrier
                     b2.wait();
 
@@ -165,7 +166,7 @@ class CellularAutomata{
                     c++; 
                 }
             }    
-            string filename="./frames/"+to_string(k)+".jpeg";
+            string filename="./frames/"+to_string(k)+".png";
             char b[filename.size()+1];
             strcpy(b, filename.c_str());
             //img.resize(1000,1000);
@@ -229,7 +230,7 @@ class CellularAutomata{
         _nIterations=nIterations;
         _workers=vector<thread>(_parallelism);
         _ranges=vector<range>(_parallelism);
-        //b1=Barrier(_parallelism);
+        b1=Barrier(_parallelism);
         b2=Barrier(_parallelism);
         collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>());
         init();
