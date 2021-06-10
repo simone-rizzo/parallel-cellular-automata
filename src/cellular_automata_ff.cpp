@@ -248,13 +248,13 @@ class CellularAutomata{
 
 };
 
-int main(){
-    int m=100;
+int main(){ 
+    int m=10;
     vector<vector<int>> A(2,vector<int>(m,1));
     ff::ParallelFor pf(8);
     bool b=0;
     pf.disableScheduler(true);
-    for(int f=0;f<100;f++){
+    for(int f=0;f<4;f++){
         pf.parallel_for_static(0,m,1,0,[&A, &m, &b](const long i) {
             std::thread::id this_id = std::this_thread::get_id();
             A[!b][i] = A[b][0]+A[b][(((i-1)%m)+m)%m]+A[b][(((i+1)%m)+m)%m];            
