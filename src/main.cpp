@@ -38,7 +38,7 @@ int rule(int s, vector<int*> vect){
 }
 
 void init_matrix(vector<vector<int>>& matrix, int n, int m)
-{
+{ 
     srand(0);
     for(int i=0;i<n;i++){
         for(int j=0;j<m;j++){
