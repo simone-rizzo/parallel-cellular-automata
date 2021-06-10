@@ -138,7 +138,7 @@ class CellularAutomata{
                     //writingBarrier();
                     b2.wait();
                     
-                }
+                } 
                 int nprint=ceil(double(_nIterations) / double(_parallelism));
                 int start=i*nprint;
                 int end= min(int(_nIterations), (int(i)+1) * nprint);

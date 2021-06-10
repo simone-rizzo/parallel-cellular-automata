@@ -13,9 +13,8 @@
 #include "barrier.cpp"
 #include <algorithm>
 #include <fstream>
-#include <ff/stencilReduce.hpp>
+#include <ff/parallel_for.hpp>
 
-using namespace ff;
 using namespace std;
 
 struct range{
@@ -250,6 +249,22 @@ class CellularAutomata{
 };
 
 int main(){
-    ff::ff_stenci
+    int m=100;
+    vector<vector<int>> A(2,vector<int>(m,1));
+    ff::ParallelFor pf(8);
+    bool b=0;
+    pf.disableScheduler(true);
+    for(int f=0;f<100;f++){
+        pf.parallel_for_static(0,m,1,0,[&A, &m, &b](const long i) {
+            std::thread::id this_id = std::this_thread::get_id();
+            A[!b][i] = A[b][0]+A[b][(((i-1)%m)+m)%m]+A[b][(((i+1)%m)+m)%m];            
+        },8);
+        pf.parallel_for_static(0,m,1,0,[&A, &m, &b](const long i) {
+            string out = to_string(A[!b][i])+" ";
+            cout<<out;         
+        },8);
+        cout<<endl;
+        b=!b;
+    }
     return 0;
 }
