@@ -39,6 +39,7 @@ int rule(int s, vector<int*> vect){
 
 void init_matrix(vector<vector<int>>& matrix, int n, int m)
 {
+    srand(0);
     for(int i=0;i<n;i++){
         for(int j=0;j<m;j++){
            int v1 = rand() % 10;
@@ -62,7 +63,7 @@ int main(){
     function<int(int,vector<int*>)> f = rule;
     CellularAutomata<int> mcA(n, m, f,
        matrix,
-        399,
+        400,
         8
     );
     return 0;
