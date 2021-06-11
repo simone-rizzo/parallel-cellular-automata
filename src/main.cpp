@@ -10,10 +10,12 @@
 #include <chrono>
 #include <functional>
 #include "./cellular_automata.cpp"
+#include "utimer.cpp"
 
 //#include "../fastflow/ff/ff.hpp"
 
 using namespace std;
+
 int rule(int s, vector<int*> vect){
     int sum = 0;
     for(int i=0; i<vect.size();i++)
@@ -52,6 +54,7 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
 
 
 int main(){
+    utimer tp("completion time");
     int n=100;
     int m=100;
     vector<vector<int>> matrix(n,vector<int>(m));

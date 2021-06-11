@@ -17,6 +17,7 @@
 
 #define cimg_use_jpeg
 #include "./cimg/CImg.h"
+#include "utimer.cpp"
 
 using namespace std;
 using namespace cimg_library;
@@ -229,6 +230,7 @@ int rule(int s, vector<int*> vect){
 
 
 int main(){ 
+    utimer tp("Completion time");
     int n=100;
     int m=100;
     vector<vector<int>> matrix(n,vector<int>(m));
@@ -236,7 +238,7 @@ int main(){
     function<int(int,vector<int*>)> f = rule;
     CellularAutomata<int> mcA(n, m, f,
        matrix,
-        400,
+        399,
         8
     );
 }
