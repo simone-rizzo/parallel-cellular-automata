@@ -154,7 +154,7 @@ class CellularAutomata{
         char b[filename.size()+1];
         strcpy(b, filename.c_str());
         //img.resize(1000,1000);
-        img.save_png(b);
+        //img.save_png(b);
         
     }
 
