@@ -122,7 +122,7 @@ class CellularAutomata{
                     string filename="./frames/"+to_string(i)+".png";
                     char b[filename.size()+1];
                     strcpy(b, filename.c_str());
-                    img.save_png(b);     
+                    //img.save_png(b);     
         },_parallelism);
         
     }
@@ -182,8 +182,6 @@ class CellularAutomata{
         _ranges=vector<segment>(_parallelism);
         pf = new ff::ParallelFor(_parallelism);        
         (*pf).disableScheduler(true);
-        /*b1=Barrier(_parallelism);
-        b2=Barrier(_parallelism);*/
         collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>());
         init();
     }
@@ -231,15 +229,15 @@ int rule(int s, vector<int*> vect){
 
 int main(){ 
     utimer tp("Completion time");
-    int n=200;
-    int m=200;
+    int n=100;
+    int m=100;
     vector<vector<int>> matrix(n,vector<int>(m));
     init_matrix(matrix,n,m);
     function<int(int,vector<int*>)> f = rule;
     CellularAutomata<int> mcA(n, m, f,
        matrix,
         400,
-        11
+        12
     );
 }
 
