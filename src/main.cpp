@@ -61,10 +61,10 @@ int main(){
     vector<vector<int>> matrix(n,vector<int>(m));
     init_matrix(matrix,n,m);
     function<int(int,vector<int*>)> f = rule;
-    CellularAutomata<int> mcA(n, m, f,
+    CellularAutomata mcA(n, m, f,
        matrix,
         400,
-        8
+        12
     );
     return 0;
 

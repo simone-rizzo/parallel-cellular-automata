@@ -22,7 +22,7 @@
 using namespace std;
 using namespace cimg_library;
 
-struct range{
+struct segment{
     pair<int, int> start;
     pair<int, int> end;
 };
@@ -40,7 +40,7 @@ class CellularAutomata{
     
     //thread _emitter;
     vector<thread> _workers;
-    vector<range> _ranges;
+    vector<segment> _ranges;
     /*int b1=0;
     mutex b1Mutex;
     condition_variable b1Condition;*/
@@ -96,7 +96,7 @@ class CellularAutomata{
         bool b=0;
         for(int f=0;f<_nIterations;f++){
             (*pf).parallel_for_static(0,_ranges.size(),1,0,[=](const long i) {
-                range r=_ranges[i];
+                segment r=_ranges[i];
                 vector<T> buffer;
                 for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
                         T currState=_matrix[b][curr.first][curr.second];
@@ -127,7 +127,7 @@ class CellularAutomata{
         
     }
 
-    void writeBufferInMatrix(vector<T>& buffer, range r){
+    void writeBufferInMatrix(vector<T>& buffer, segment r){
         size_t k=0;
         for(pair<int, int> curr = r.start; curr<=r.end; increment(curr)){
             _matrix[curr.first][curr.second] = buffer[k];
@@ -179,7 +179,7 @@ class CellularAutomata{
         _parallelism=parallelism;
         _nIterations=nIterations;
         _workers=vector<thread>(_parallelism);
-        _ranges=vector<range>(_parallelism);
+        _ranges=vector<segment>(_parallelism);
         pf = new ff::ParallelFor(_parallelism);        
         (*pf).disableScheduler(true);
         /*b1=Barrier(_parallelism);
@@ -231,15 +231,15 @@ int rule(int s, vector<int*> vect){
 
 int main(){ 
     utimer tp("Completion time");
-    int n=100;
-    int m=100;
+    int n=200;
+    int m=200;
     vector<vector<int>> matrix(n,vector<int>(m));
     init_matrix(matrix,n,m);
     function<int(int,vector<int*>)> f = rule;
     CellularAutomata<int> mcA(n, m, f,
        matrix,
-        399,
-        8
+        400,
+        11
     );
 }
 
