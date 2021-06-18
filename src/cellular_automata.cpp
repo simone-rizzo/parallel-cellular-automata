@@ -11,8 +11,8 @@
 #include <algorithm>
 #include <string>
 #include <cstring>
-#include "jpeglib.h"
-#define cimg_use_jpeg
+#define cimg_use_png
+
 #include "./cimg/CImg.h"
 #include <cstdint>
 #include <cassert>
@@ -69,6 +69,10 @@ class CellularAutomata{
             _workers[i].join();
     }
 
+    template <typename Tp> int sgn(Tp val) {
+        return (Tp(0) < val) - (val < Tp(0));
+    }
+
     void initRanges(){
         //We cosider the matrix in base _m like decines and units (sequence of blocks)
         auto size = _n * _m; //matrix size
@@ -80,17 +84,18 @@ class CellularAutomata{
             int i = index.first;
             int j = index.second;
 
-            int endj = (((j - 1 + wl_blocco.second) % _m)+_m)%_m; //ending J 
-            int carry = (j - 1 + wl_blocco.second) / _m; //carry as number of remaining cells
-            int endi = (i + carry + wl_blocco.first); //ending i
+            int endj = (((j-1+ wl_blocco.second) % int(_m))+int(_m))% int(_m); //ending J 
+            int goBack= endj > (((j+ wl_blocco.second) % int(_m))+int(_m))% int(_m) ? -1:0; //to know if we are returning to the previous line (we need to -1 on i)
+            int carry = (double(j-1+ wl_blocco.second) / double(_m)); //carry as number of remaining cells
+            int endi = (i + carry + goBack + wl_blocco.first); //ending i
             if (endi >= _n) { //foundamental 
                 endi = _n - 1;
                 endj = _m - 1;
             }
             _ranges[k] = {index, make_pair(endi, endj)}; // write the ranges of theads
             carry=0;
-            index.second = (((endj+1)% _m)+_m)%_m; //move to the next cell, for the new range start
-            carry = (endj+1) / _m;
+            index.second = (((endj+1)% int(_m))+int(_m))%int(_m); //move to the next cell, for the new range start
+            carry = (endj+1) / int(_m);
             index.first =  endi + carry;
             
         }
@@ -150,7 +155,7 @@ class CellularAutomata{
                 img(i,j)=matrix[i][j]>0?255:0;
             }
         }
-        string filename="./frames/"+to_string(iteration)+".jpeg";
+        string filename="./frames/"+to_string(iteration)+".png";
         char b[filename.size()+1];
         strcpy(b, filename.c_str());
         //img.resize(1000,1000);
