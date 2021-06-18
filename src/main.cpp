@@ -54,16 +54,24 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
 }
 
 
-int main(){
+int main(int argc, char *argv[]){    
     utimer tp("completion time");
     int n=100;
     int m=100;
+    int iter = 400;
+    int nw = 12;
+    if(argc>1){
+        n = atoi(argv[1]);
+        m = atoi(argv[2]);
+        iter = atoi(argv[3]);
+        nw = atoi(argv[4]);
+    }
     vector<vector<int>> matrix(n,vector<int>(m));
     init_matrix(matrix,n,m);
     function<int(int,vector<int*>)> f = rule;
     CellularAutomata mcA(matrix,f,
-        400,
-        12
+        iter,
+        nw
     );
     mcA.run(); // launch the execution
     return 0;
