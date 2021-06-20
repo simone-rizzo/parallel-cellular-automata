@@ -76,7 +76,7 @@ class CellularAutomata{
     void initRanges(){
         //We cosider the matrix in base _m like decines and units (sequence of blocks)
         auto size = _n * _m; //matrix size
-        int workLoad = ceil(double(size) / double(_parallelism)); //Workload size for each thread Upper bounded
+        int workLoad = ceil(double(size) / double(_parallelism))-1; //Workload size for each thread Upper bounded
 
         pair<int, int> wl_blocco = make_pair(workLoad / _m, workLoad % _m); //Workload size in the matrix
         pair<int,int> index = make_pair(0,0); // Initial index position
@@ -84,10 +84,9 @@ class CellularAutomata{
             int i = index.first;
             int j = index.second;
 
-            int endj = (((j-1+ wl_blocco.second) % int(_m))+int(_m))% int(_m); //ending J 
-            int goBack= endj > (((j+ wl_blocco.second) % int(_m))+int(_m))% int(_m) ? -1:0; //to know if we are returning to the previous line (we need to -1 on i)
-            int carry = (double(j-1+ wl_blocco.second) / double(_m)); //carry as number of remaining cells
-            int endi = (i + carry + goBack + wl_blocco.first); //ending i
+            int endj = (((j+ wl_blocco.second) % int(_m))+int(_m))% int(_m); //ending J 
+            int carry = (double(j+ wl_blocco.second) / double(_m)); //carry as number of remaining cells
+            int endi = (i + carry + wl_blocco.first); //ending i
             if (endi >= _n) { //foundamental 
                 endi = _n - 1;
                 endj = _m - 1;
