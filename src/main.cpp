@@ -10,7 +10,6 @@
 #include <chrono>
 #include <functional>
 #include "./cellular_automata.cpp"
-#include "utimer.cpp"
 
 //#include "../fastflow/ff/ff.hpp"
 
@@ -55,11 +54,11 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
 
 
 int main(int argc, char* argv[]){
-    utimer tp("completion time");
-    int n=2;
-    int m=2;
+    //utimer tp("completion time");
+    int n=100;
+    int m=100;
     int iter = 400;
-    int nw = 4;
+    int nw = 1;
     if(argc>1){
         n = atoi(argv[1]);
         m = atoi(argv[2]);

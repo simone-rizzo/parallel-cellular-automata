@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <cassert>
 #include "barrier_2.cpp"
+
+#include "utimer.cpp"
 //#define PARALLEL_WRITE
 
 using namespace std;
@@ -25,6 +27,7 @@ using namespace cimg_library;
 struct range{
     pair<int, int> start;
     pair<int, int> end;
+    int size;
 };
 
 template<class T>
@@ -51,13 +54,23 @@ class CellularAutomata{
     #endif
     #ifdef PARALLEL_WRITE
     Barrier2 b;
-    #endif
     vector<vector<vector<T>>> collectorBuffer;
+    #endif
+    
 
 
     void init ()  {
         //initEmitter();
         initRanges();
+        
+        #ifdef PARALLEL_WRITE
+        //initialization of the buffers
+        for(int i=0; i < _parallelism; i++){
+            for(int j=0; j<_nIterations; j++){
+                collectorBuffer[i][j] = vector<T>(_ranges[i].size); 
+            }
+        }
+        #endif
         initEmitterCollector();  
     }
 
@@ -73,6 +86,12 @@ class CellularAutomata{
         return (Tp(0) < val) - (val < Tp(0));
     }
 
+    int getRangeSize(pair<int,int> start, pair<int,int> end){
+        int low = end.second - start.second;
+        if (low < 0) --end.first;
+        int high = end.first - start.first;
+        return (((low % int(_m)) + int(_m) )% int(_m) )+ (high *  int(_m))+1;
+    }
     void initRanges(){
         //We cosider the matrix in base _m like decines and units (sequence of blocks)
         auto size = _n * _m; //matrix size
@@ -91,7 +110,7 @@ class CellularAutomata{
                 endi = _n - 1;
                 endj = _m - 1;
             }
-            _ranges[k] = {index, make_pair(endi, endj)}; // write the ranges of theads
+            _ranges[k] = {index, make_pair(endi, endj), getRangeSize(index, make_pair(endi, endj))}; // write the ranges of theads
             carry=0;
             index.second = (((endj+1)% int(_m))+int(_m))%int(_m); //move to the next cell, for the new range start
             carry = (endj+1) / int(_m);
@@ -100,46 +119,57 @@ class CellularAutomata{
         }
     }
 
+
+
     void initWorkers(){
         for(size_t i=0; i<_parallelism; i++){
             _workers[i]=thread([=](){
                 range r=_ranges[i];
                 bool index=0;
                 for(size_t j=0; j<_nIterations; j++){
-                    #ifdef PARALLEL_WRITE
-                    //vector<T> buffer;
-                    #endif
-                    for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
-                        //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
-                        T currState=matrices[index][curr.first][curr.second];
-                        vector<T*> neighbors=getNeighbors(curr, index);
+                    string s="matrix it:"+to_string(j);
+                    utimer somma("somma");
+                    {   utimer tp(s);
                         #ifdef PARALLEL_WRITE
-                        collectorBuffer[i][j].push_back(_rule(currState, neighbors));
-                        //buffer.push_back(_rule(currState, neighbors));
+                        //vector<T> buffer;
                         #endif
-                        matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
+                        int o=0;
+                        for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
+                            //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
+                            T currState=matrices[index][curr.first][curr.second];
+                            vector<T*> neighbors=getNeighbors(curr, index);
+                            #ifdef PARALLEL_WRITE
+                            collectorBuffer[i][j][o++]=(_rule(currState, neighbors));
+                            //buffer.push_back(_rule(currState, neighbors));
+                            #endif
+                            matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
+                        }
+                        index=!index;
                     }
-                    index=!index;
-                    
-                    #ifdef PARALLEL_WRITE
-                    //write buffer to the collector queue      
-                    //collectorBuffer[i].push_back(buffer);
-                    b.wait();
-                    #endif
+                        #ifdef PARALLEL_WRITE
+                        //write buffer to the collector queue      
+                        //collectorBuffer[i].push_back(buffer);
+                        b.wait();
+                        #endif
 
-                    #ifndef PARALLEL_WRITE
-                    b1.wait();
-                    if(i==0) //hardcoded the first worker writes the image
-                        writeImage(index, j);
-                    b2.wait();
-                    #endif
+                        #ifndef PARALLEL_WRITE
+                        b1.wait();
+                        if(i==0) //hardcoded the first worker writes the image
+                        {
+                            utimer tp1("image:");
+                            writeImage(index, j);
+                        }
+                        b2.wait();
+                        #endif
+                        
                     
 
                 }
+                utimer tp("image par:");
                 #ifdef PARALLEL_WRITE
                 writeImageParallel(i);
                 #endif
-
+                
             });
         }
     }
@@ -163,6 +193,7 @@ class CellularAutomata{
         
     }
 
+#ifdef PARALLEL_WRITE
     void writeImageParallel(int i){
         int nprint=ceil(double(_nIterations) / double(_parallelism));
         int start=i*nprint;
@@ -186,7 +217,7 @@ class CellularAutomata{
             img.save_png(b);
         }
     }
-
+#endif
     void writeBufferInMatrix(vector<T>& buffer, range r, bool index){
         size_t k=0;
         for(pair<int, int> curr = r.start; curr<=r.end; increment(curr)){
@@ -249,9 +280,9 @@ class CellularAutomata{
         #endif
         #ifdef PARALLEL_WRITE
         b=Barrier2(_parallelism);
+        collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>(_nIterations));
         #endif
-        collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>(_nIterations, vector<T>()));
-        init();
+       init();
     }
 
 };
