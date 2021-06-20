@@ -107,14 +107,15 @@ class CellularAutomata{
                 bool index=0;
                 for(size_t j=0; j<_nIterations; j++){
                     #ifdef PARALLEL_WRITE
-                    vector<T> buffer;
+                    //vector<T> buffer;
                     #endif
                     for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
                         //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
                         T currState=matrices[index][curr.first][curr.second];
                         vector<T*> neighbors=getNeighbors(curr, index);
                         #ifdef PARALLEL_WRITE
-                        buffer.push_back(_rule(currState, neighbors));
+                        collectorBuffer[i][j].push_back(_rule(currState, neighbors));
+                        //buffer.push_back(_rule(currState, neighbors));
                         #endif
                         matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
                     }
@@ -122,7 +123,7 @@ class CellularAutomata{
                     
                     #ifdef PARALLEL_WRITE
                     //write buffer to the collector queue      
-                    collectorBuffer[i].push_back(buffer);
+                    //collectorBuffer[i].push_back(buffer);
                     b.wait();
                     #endif
 
@@ -249,7 +250,7 @@ class CellularAutomata{
         #ifdef PARALLEL_WRITE
         b=Barrier2(_parallelism);
         #endif
-        collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>());
+        collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>(_nIterations, vector<T>()));
         init();
     }
 
