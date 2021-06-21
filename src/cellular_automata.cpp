@@ -135,13 +135,12 @@ class CellularAutomata{
                             //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
                             T currState=matrices[index][curr.first][curr.second];
                             vector<T*> neighbors=getNeighbors(curr, index);
+                            matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
                             #ifdef PARALLEL_WRITE
-                            {   utimer parwrite("par write");
-                                collectorBuffer[i][j][o++]=(_rule(currState, neighbors));
-                            }
+                            collectorBuffer[i][j][o++]=( matrices[!index][curr.first][curr.second]);                            
                             //buffer.push_back(_rule(currState, neighbors));
                             #endif
-                            matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
+                            
                         }
                         index=!index;
                     }
@@ -164,8 +163,9 @@ class CellularAutomata{
                     
 
                 }
-                utimer tp("image par:");
+                
                 #ifdef PARALLEL_WRITE
+                utimer tp("image par:");
                 writeImageParallel(i);
                 #endif
                 
