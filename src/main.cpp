@@ -55,17 +55,17 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
 
 int main(int argc, char* argv[]){
     utimer tp("completion time");
-    int n=100;
-    int m=100;
+    int n=400;
+    int m=400;
     int iter = 400;
-    int nw = 1;
+    int nw = 8;
     if(argc>1){
         n = atoi(argv[1]);
         m = atoi(argv[2]);
         iter = atoi(argv[3]);
         nw = atoi(argv[4]);
     }
-     vector<vector<int>> matrix(n,vector<int>(m));
+    vector<vector<int>> matrix(n,vector<int>(m));
     init_matrix(matrix,n,m);
     function<int(int,vector<int*>)> f = rule;
     CellularAutomata<int> mcA(n, m, f,

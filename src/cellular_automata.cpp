@@ -128,8 +128,8 @@ class CellularAutomata{
                 bool index=0;
                 for(size_t j=0; j<_nIterations; j++){
                     string s="matrix it:"+to_string(j);
-                    utimer somma("somma");
-                    {   utimer tp(s);
+                    //utimer somma("somma");
+                    {   //utimer tp(s);
                         int o=0;
                         for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
                             //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
@@ -154,7 +154,7 @@ class CellularAutomata{
                         b1.wait();
                         if(i==0) //hardcoded the first worker writes the image
                         {
-                            utimer tp1("image:");
+                            //utimer tp1("image:");
                             writeImage(index, j);
                         }
                         b2.wait();
@@ -165,7 +165,7 @@ class CellularAutomata{
                 }
                 
                 #ifdef PARALLEL_WRITE
-                utimer tp("image par:");
+                //utimer tp("image par:");
                 writeImageParallel(i);
                 #endif
                 
@@ -177,7 +177,6 @@ class CellularAutomata{
 
     void writeImage(int index, int iteration){
         CImg<unsigned char> img(_n,_m); //create new image                    
-        int c=0;
         auto matrix=matrices[index];
         for(int i=0; i<_n; i++){
             for(int j=0; j<_m; j++){
@@ -194,12 +193,14 @@ class CellularAutomata{
 
 #ifdef PARALLEL_WRITE
     void writeImageParallel(int i){
+
         int nprint=ceil(double(_nIterations) / double(_parallelism));
         int start=i*nprint;
         int end= min(int(_nIterations), (int(i)+1) * nprint);
         //string s="thread: "+to_string(i)+" start: "+to_string(start)+" end: " +to_string(end);
         //cout<<s<<endl;
         for(int k=start; k<end; k++){
+            //utimer gg("single image parallel");
             CImg<unsigned char> img(_n,_m); //create new image                    
             int c=0;
             for (int j = 0; j < _parallelism; j++) { //for each worker
