@@ -130,16 +130,15 @@ class CellularAutomata{
                     string s="matrix it:"+to_string(j);
                     utimer somma("somma");
                     {   utimer tp(s);
-                        #ifdef PARALLEL_WRITE
-                        //vector<T> buffer;
-                        #endif
                         int o=0;
                         for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
                             //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
                             T currState=matrices[index][curr.first][curr.second];
                             vector<T*> neighbors=getNeighbors(curr, index);
                             #ifdef PARALLEL_WRITE
-                            collectorBuffer[i][j][o++]=(_rule(currState, neighbors));
+                            {   utimer parwrite("par write");
+                                collectorBuffer[i][j][o++]=(_rule(currState, neighbors));
+                            }
                             //buffer.push_back(_rule(currState, neighbors));
                             #endif
                             matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);

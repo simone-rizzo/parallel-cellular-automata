@@ -54,7 +54,7 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
 
 
 int main(int argc, char* argv[]){
-    //utimer tp("completion time");
+    utimer tp("completion time");
     int n=100;
     int m=100;
     int iter = 400;
