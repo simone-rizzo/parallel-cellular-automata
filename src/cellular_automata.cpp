@@ -203,9 +203,9 @@ class CellularAutomata{
             CImg<unsigned char> img(_n,_m); //create new image                    
             int c=0;
             for (int j = 0; j < _parallelism; j++) { //for each worker
-                for (auto x : collectorBuffer[j][k]) { 
+                for (int h=0;h<collectorBuffer[j][k].size();h++) { 
                     //for each item in the buffer of the kth iteration of thread i
-                    img(c/_m,c%_m)=x>0?255:0;
+                    img(c/_m,c%_m)=collectorBuffer[j][k][h]>0?255:0;
                     c++; 
                 }
             }    
