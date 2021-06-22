@@ -25,7 +25,7 @@ using namespace std;
 using namespace cimg_library;
 
 
-struct range{
+struct segment{
     pair<int, int> start;
     pair<int, int> end;
     int size;
@@ -41,7 +41,7 @@ class CellularAutomata{
     size_t _parallelism;
     size_t _nIterations;
 
-    vector<range> _ranges;
+    vector<segment> _ranges;
 
     ff::ParallelFor* pf;
     
@@ -108,17 +108,30 @@ class CellularAutomata{
         for(int f=0;f<_nIterations;f++){
             utimer par1("parallel for 1:");
             (*pf).parallel_for_static(0,_parallelism,1,0,[=](const long i) {
-                range r=_ranges[i];
+                
+                segment r=_ranges[i];
+                //vector<T> buf(r.size);
                 int o=0;
                     utimer df("computation th0");                   
                     for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
                             T currState=_matrix[b][curr.first][curr.second];
                             vector<T*> neighbors=getNeighbors(curr, b);                        
-                            _matrix[!b][curr.first][curr.second]=_rule(currState, neighbors);
-                            collectorBuffer[i][f][o++] = _matrix[!b][curr.first][curr.second];      
+                            //_matrix[!b][curr.first][curr.second]=_rule(currState, neighbors);
+                           
+                            //collectorBuffer[i][f][o++] = _matrix[!b][curr.first][curr.second];      
+                            collectorBuffer[i][f][o++] = _rule(currState, neighbors);
                     } 
                                         
             },_parallelism);
+            int c=0;
+            for (int j = 0; j < _parallelism; j++) { //for each worker
+                for (int h=0;h< collectorBuffer[j][i].size(); h++) { 
+                    //for each item in the buffer of the kth iteration of thread i
+                    _matrix[!b][c/_m][c%_m]=collectorBuffer[j][f][h]>0?255:0;
+                    c++; 
+                }
+            }  
+           
             b=!b;
         }
         utimer par2("parallel for 2:");
@@ -181,7 +194,7 @@ class CellularAutomata{
         //TODO: if less than 2 error
         _parallelism=parallelism;
         _nIterations=nIterations;
-        _ranges=vector<range>(_parallelism);
+        _ranges=vector<segment>(_parallelism);
         pf = new ff::ParallelFor(_parallelism);        
         (*pf).disableScheduler(true);
         collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>(nIterations));
