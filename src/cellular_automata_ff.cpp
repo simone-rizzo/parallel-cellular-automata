@@ -50,16 +50,12 @@ class CellularAutomata{
 
     void init ()  {
         //initEmitter();
-        initRanges();
-        
-        #ifdef PARALLEL_WRITE
-        //initialization of the buffers
+        initRanges();        
         for(int i=0; i < _parallelism; i++){
             for(int j=0; j<_nIterations; j++){
                 collectorBuffer[i][j] = vector<T>(_ranges[i].size); 
             }
         }
-        #endif
         initEmitterCollector();  
     }
 
@@ -110,21 +106,22 @@ class CellularAutomata{
 
         bool b=0;
         for(int f=0;f<_nIterations;f++){
-            (*pf).parallel_for_static(0,_ranges.size(),1,0,[=](const long i) {
+            utimer par1("parallel for 1:");
+            (*pf).parallel_for_static(0,_parallelism,1,0,[=](const long i) {
                 range r=_ranges[i];
-                vector<T> buffer;
                 int o=0;
-                for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
-                        T currState=_matrix[b][curr.first][curr.second];
-                        vector<T*> neighbors=getNeighbors(curr, b);
-                        int new_value = _rule(currState, neighbors);
-                        _matrix[!b][curr.first][curr.second]=new_value;
-                        collectorBuffer[i][f][o++] = new_value;
-                        //buffer.push_back(_rule(currState, neighbors));           
-                    }                         
+                    utimer df("computation th0");                   
+                    for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
+                            T currState=_matrix[b][curr.first][curr.second];
+                            vector<T*> neighbors=getNeighbors(curr, b);                        
+                            _matrix[!b][curr.first][curr.second]=_rule(currState, neighbors);
+                            collectorBuffer[i][f][o++] = _matrix[!b][curr.first][curr.second];      
+                    } 
+                                        
             },_parallelism);
             b=!b;
         }
+        utimer par2("parallel for 2:");
         (*pf).parallel_for_static(0,_nIterations,1,0,[=](const long i) {
              CImg<unsigned char> img(_n,_m); //create new image                    
                     int c=0;
@@ -135,20 +132,12 @@ class CellularAutomata{
                             c++; 
                         }
                     }    
-                    /*string filename="./frames/"+to_string(i)+".png";
+                    string filename="./frames/"+to_string(i)+".png";
                     char b[filename.size()+1];
                     strcpy(b, filename.c_str());
-                    img.save_png(b);*/    
+                    img.save_png(b);    
         },_parallelism);
         
-    }
-
-    void writeBufferInMatrix(vector<T>& buffer, segment r){
-        size_t k=0;
-        for(pair<int, int> curr = r.start; curr<=r.end; increment(curr)){
-            _matrix[curr.first][curr.second] = buffer[k];
-            k++;
-        }
     }
 
     void increment(pair<int, int>& pair){
@@ -242,9 +231,9 @@ int rule(int s, vector<int*> vect){
 
 int main(int argc, char *argv[]){ 
     utimer tp("completion time");
-    int n=400;
-    int m=400;
-    int iter = 400;
+    int n=4000;
+    int m=4000;
+    int iter = 1;
     int nw = 8;
     if(argc>1){
         n = atoi(argv[1]);
