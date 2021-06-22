@@ -19,67 +19,38 @@
 #include "barrier_2.cpp"
 
 #include "utimer.cpp"
-//#define PARALLEL_WRITE
 
 using namespace std;
 using namespace cimg_library;
 
-struct range{
+struct segment{
     pair<int, int> start;
     pair<int, int> end;
     int size;
 };
 
-template<class T>
 class CellularAutomata{
     
     size_t _n;
     size_t _m;
-
-    
-    vector<vector<vector<T>>> matrices;
-    
-    function<T(T, vector<T*>)> _rule;
+    vector<vector<vector<int>>> matrices;    
+    function<int(int, vector<int*>)> _rule;
     size_t _parallelism;
     size_t _nIterations;
-    //bool emitterEnabled;
-    
-    //thread _emitter;
     vector<thread> _workers;
-    vector<range> _ranges;
-
-    #ifndef PARALLEL_WRITE
-    Barrier b1;
-    Barrier b2;
-    #endif
-    #ifdef PARALLEL_WRITE
+    vector<segment> _ranges;
+    vector<int> _states;
     Barrier2 b;
-    vector<vector<vector<T>>> collectorBuffer;
-    #endif
-    
+    vector<vector<vector<int>>> collectorBuffer;
 
 
-    void init ()  {
-        //initEmitter();
-        initRanges();
-        
-        #ifdef PARALLEL_WRITE
+    void buffer_init()  {
         //initialization of the buffers
         for(int i=0; i < _parallelism; i++){
             for(int j=0; j<_nIterations; j++){
-                collectorBuffer[i][j] = vector<T>(_ranges[i].size); 
+                collectorBuffer[i][j] = vector<int>(_ranges[i].size); 
             }
-        }
-        #endif
-        initEmitterCollector();  
-    }
-
-    void initEmitterCollector(){
-        //TODO add emitter collector thread
-        initWorkers();
-
-        for (int i = 0; i < _parallelism; i++)
-            _workers[i].join();
+        } 
     }
 
     template <typename Tp> int sgn(Tp val) {
@@ -92,7 +63,7 @@ class CellularAutomata{
         int high = end.first - start.first;
         return (((low % int(_m)) + int(_m) )% int(_m) )+ (high *  int(_m))+1;
     }
-    void initRanges(){
+    void computeRanges(){
         //We cosider the matrix in base _m like decines and units (sequence of blocks)
         auto size = _n * _m; //matrix size
         int workLoad = ceil(double(size) / double(_parallelism))-1; //Workload size for each thread Upper bounded
@@ -120,109 +91,48 @@ class CellularAutomata{
     }
 
 
-
-    void initWorkers(){
+    //The core of the Framework Spawn the nw thread, that make the computation.
+    void spawnWorkers(){
         for(size_t i=0; i<_parallelism; i++){
             _workers[i]=thread([=](){
-                range r=_ranges[i];
+                segment r=_ranges[i];
                 bool index=0;
                 for(size_t j=0; j<_nIterations; j++){
-                    string s="matrix it:"+to_string(j);
-                    //utimer somma("somma");
-                    {   //utimer tp(s);
-                        int o=0;
-                        for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){
-                            //cout<<"thread: "<<i<<" start: "<<r.start.first<<","<<r.start.second<<" end: "<<r.end.first<<","<<r.end.second<<"curr: "<<curr.first<<","<<curr.second<<endl;
-                            T currState=matrices[index][curr.first][curr.second];
-                            vector<T*> neighbors=getNeighbors(curr, index);
-                            matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
-                            #ifdef PARALLEL_WRITE
-                            collectorBuffer[i][j][o++]=( matrices[!index][curr.first][curr.second]);                            
-                            //buffer.push_back(_rule(currState, neighbors));
-                            #endif
-                            
-                        }
-                        index=!index;
+                    int o=0;
+                    for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
+                        int currState=matrices[index][curr.first][curr.second];
+                        vector<int*> neighbors=getNeighbors(curr, index);
+                        matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
+                        collectorBuffer[i][j][o++]=( matrices[!index][curr.first][curr.second]); 
                     }
-                        #ifdef PARALLEL_WRITE
-                        //write buffer to the collector queue      
-                        //collectorBuffer[i].push_back(buffer);
-                        b.wait();
-                        #endif
-
-                        #ifndef PARALLEL_WRITE
-                        b1.wait();
-                        if(i==0) //hardcoded the first worker writes the image
-                        {
-                            //utimer tp1("image:");
-                            writeImage(index, j);
-                        }
-                        b2.wait();
-                        #endif
-                        
-                    
-
+                    index=!index;
+                    b.wait(); //wait on barrier
                 }
-                
-                #ifdef PARALLEL_WRITE
-                //utimer tp("image par:");
-                writeImageParallel(i);
-                #endif
-                
+                writeImageParallel(i);                
             });
         }
     }
 
 
-
-    void writeImage(int index, int iteration){
-        CImg<unsigned char> img(_n,_m); //create new image                    
-        auto matrix=matrices[index];
-        for(int i=0; i<_n; i++){
-            for(int j=0; j<_m; j++){
-                img(i,j)=matrix[i][j]>0?255:0;
-            }
-        }
-        string filename="./frames/"+to_string(iteration)+".png";
-        char b[filename.size()+1];
-        strcpy(b, filename.c_str());
-        //img.resize(1000,1000);
-        img.save_png(b);
-        
-    }
-
-#ifdef PARALLEL_WRITE
     void writeImageParallel(int i){
-
         int nprint=ceil(double(_nIterations) / double(_parallelism));
         int start=i*nprint;
         int end= min(int(_nIterations), (int(i)+1) * nprint);
-        //string s="thread: "+to_string(i)+" start: "+to_string(start)+" end: " +to_string(end);
-        //cout<<s<<endl;
         for(int k=start; k<end; k++){
-            //utimer gg("single image parallel");
             CImg<unsigned char> img(_n,_m); //create new image                    
             int c=0;
             for (int j = 0; j < _parallelism; j++) { //for each worker
                 for (int h=0;h<collectorBuffer[j][k].size();h++) { 
                     //for each item in the buffer of the kth iteration of thread i
-                    img(c/_m,c%_m)=collectorBuffer[j][k][h]>0?255:0;
+                    img(c/_m,c%_m)=_states[collectorBuffer[j][k][h]];
                     c++; 
                 }
             }    
             string filename="./frames/"+to_string(k)+".png";
             char b[filename.size()+1];
             strcpy(b, filename.c_str());
-            //img.resize(1000,1000);
+            //img.resize(1000,1000); //possibility to resize the image
             img.save_png(b);
-        }
-    }
-#endif
-    void writeBufferInMatrix(vector<T>& buffer, range r, bool index){
-        size_t k=0;
-        for(pair<int, int> curr = r.start; curr<=r.end; increment(curr)){
-            matrices[index][curr.first][curr.second] = buffer[k];
-            k++;
         }
     }
 
@@ -234,8 +144,8 @@ class CellularAutomata{
         pair.second=j;
     }
 
-    vector<T*> getNeighbors(pair<int,int> centre_index, bool index){
-        vector<T*> neighborhood(8);
+    vector<int*> getNeighbors(pair<int,int> centre_index, bool index){
+        vector<int*> neighborhood(8);
         int neigh_num = 0;
     
         int n = _n;
@@ -261,28 +171,27 @@ class CellularAutomata{
     }
 
     public:
-    CellularAutomata(size_t n, size_t m, function<T(T, vector<T*>)> rule, vector<vector<T>>& initialState, size_t nIterations, size_t parallelism){
+    CellularAutomata(vector<vector<int>>& initialState ,function<int(int, vector<int*>)> rule, size_t nIterations, vector<int>states, size_t parallelism){
         _rule=rule;
-        _n=n;
-        _m=m;
-        matrices=vector<vector<vector<T>>>(2, initialState);
-        //matrices[0]=initialState;
-        //matrices[1]=new vector<vector<T>>(_n, vector<T>(_m));
-
-        //TODO: if less than 2 error
+        _n=initialState.size();
+        _m=initialState[0].size();
+        matrices=vector<vector<vector<int>>>(2, initialState);
+        _states=states;
         _parallelism=parallelism;
         _nIterations=nIterations;
         _workers=vector<thread>(_parallelism);
-        _ranges=vector<range>(_parallelism);
-        #ifndef PARALLEL_WRITE
-        b1=Barrier(_parallelism);
-        b2=Barrier(_parallelism);
-        #endif
-        #ifdef PARALLEL_WRITE
+        _ranges=vector<segment>(_parallelism);
         b=Barrier2(_parallelism);
-        collectorBuffer= vector<vector<vector<T>>>(_parallelism, vector<vector<T>>(_nIterations));
-        #endif
-       init();
+        collectorBuffer= vector<vector<vector<int>>>(_parallelism, vector<vector<int>>(_nIterations));
+        computeRanges();
+        buffer_init();
+    }
+
+    public:
+    void run(){
+        spawnWorkers();
+        for (int i = 0; i < _parallelism; i++)
+            _workers[i].join();
     }
 
 };

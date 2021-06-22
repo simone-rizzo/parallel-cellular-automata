@@ -1,5 +1,5 @@
 main: main.cpp
-	g++-10 main.cpp -pthread -lX11 -lpng "-D PARALLEL_WRITE" -o main_parallel
+	g++-10 main.cpp -pthread -lX11 -lpng  -o main_parallel
 
 seq: sequential.cpp
 	g++-10 sequential.cpp -pthread -lX11 -lpng -o sequential

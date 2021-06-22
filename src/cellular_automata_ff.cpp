@@ -136,7 +136,7 @@ class CellularAutomata{
         }
         utimer par2("parallel for 2:");
         (*pf).parallel_for_static(0,_nIterations,1,0,[=](const long i) {
-             CImg<unsigned char> img(_n,_m); //create new image                    
+            CImg<unsigned char> img(_n,_m); //create new image                    
                     int c=0;
                     for (int j = 0; j < _parallelism; j++) { //for each worker
                         for (int h=0;h< collectorBuffer[j][i].size(); h++) { 

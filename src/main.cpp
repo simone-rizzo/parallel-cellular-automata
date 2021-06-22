@@ -67,12 +67,16 @@ int main(int argc, char* argv[]){
     }
     vector<vector<int>> matrix(n,vector<int>(m));
     init_matrix(matrix,n,m);
+    vector<int> states = vector<int>(2);
+    states[0]=0;
+    states[1]=255;
     function<int(int,vector<int*>)> f = rule;
-    CellularAutomata<int> mcA(n, m, f,
-       matrix,
+    CellularAutomata mcA(matrix, f,
         iter,
+        states,
         nw
     );
+    mcA.run();
     return 0;
 
 }
