@@ -10,7 +10,6 @@
 #include <chrono>
 #include <functional>
 #include "./cellular_automata.cpp"
-#include "utimer.cpp"
 
 //#include "../fastflow/ff/ff.hpp"
 
@@ -38,7 +37,7 @@ int rule(int s, vector<int*> vect){
 }
 
 void init_matrix(vector<vector<int>>& matrix, int n, int m)
-{ 
+{
     srand(0);
     for(int i=0;i<n;i++){
         for(int j=0;j<m;j++){
@@ -54,12 +53,12 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
 }
 
 
-int main(int argc, char *argv[]){    
+int main(int argc, char* argv[]){
     utimer tp("completion time");
-    int n=100;
-    int m=100;
+    int n=400;
+    int m=400;
     int iter = 400;
-    int nw = 12;
+    int nw = 8;
     if(argc>1){
         n = atoi(argv[1]);
         m = atoi(argv[2]);
@@ -69,11 +68,11 @@ int main(int argc, char *argv[]){
     vector<vector<int>> matrix(n,vector<int>(m));
     init_matrix(matrix,n,m);
     function<int(int,vector<int*>)> f = rule;
-    CellularAutomata mcA(matrix,f,
+    CellularAutomata<int> mcA(n, m, f,
+       matrix,
         iter,
         nw
     );
-    mcA.run(); // launch the execution
     return 0;
 
 }
