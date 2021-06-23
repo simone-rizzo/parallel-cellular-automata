@@ -35,7 +35,7 @@ class CellularAutomata{
     size_t _n; //number of rows
     size_t _m; //number of columns
     vector<vector<vector<int>>> matrices; //the matrices    
-    function<int(int, vector<int*>)> _rule; //rule to be applied at each iteratio
+    function<int(int, vector<int*>&)> _rule; //rule to be applied at each iteratio
     size_t _parallelism; //parDegree
     size_t _nIterations; //number of iteration
     vector<thread> _workers; //list of workers
@@ -170,7 +170,7 @@ class CellularAutomata{
     }
 
     public:
-    CellularAutomata(vector<vector<int>>& initialState ,function<int(int, vector<int*>)> rule, size_t nIterations, vector<int>states, size_t parallelism){
+    CellularAutomata(vector<vector<int>>& initialState ,function<int(int, vector<int*>&)> rule, size_t nIterations, vector<int>states, size_t parallelism){
         _rule=rule;
         _n=initialState.size();
         _m=initialState[0].size();

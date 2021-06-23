@@ -14,7 +14,7 @@
 using namespace std;
 
 //Simpler rule Taken from Game of Life by Conways
-int rule(int s, vector<int*> vect){
+int rule(int s, vector<int*>& vect){
     int sum = 0;
     for(int i=0; i<vect.size();i++)
     {
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
     vector<int> states = vector<int>(2);
     states[0]=0;
     states[1]=255;
-    function<int(int,vector<int*>)> f = rule;
+    function<int(int,vector<int*>&)> f = rule;
     CellularAutomata mcA(matrix, f,
         iter,
         states,

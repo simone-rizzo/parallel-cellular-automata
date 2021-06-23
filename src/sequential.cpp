@@ -26,7 +26,7 @@ using namespace cimg_library;
     vector<vector<vector<int>>> matrices;
 
 
-int rule(int s, vector<int*> vect){
+int rule(int s, vector<int*>& vect){
     int sum = 0;
     for(int i=0; i<vect.size();i++)
     {

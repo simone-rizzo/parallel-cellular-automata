@@ -36,7 +36,7 @@ class CellularAutomata{
     size_t _n; //number of rows
     size_t _m; //number of columns
     vector<vector<vector<int>>> matrices; //the matrices      
-    function<int(int, vector<int*>)> _rule; //rule to be applied at each iteration
+    function<int(int, vector<int*>&)> _rule; //rule to be applied at each iteration
     size_t _parallelism; //parDegree
     size_t _nIterations; //number of iteration
 
@@ -166,12 +166,11 @@ class CellularAutomata{
     }
 
     public:
-    CellularAutomata(vector<vector<int>>& initialState ,function<int(int, vector<int*>)> rule, size_t nIterations, vector<int>states, size_t parallelism){
+    CellularAutomata(vector<vector<int>>& initialState ,function<int(int, vector<int*>&)> rule, size_t nIterations, vector<int>states, size_t parallelism){
         _rule=rule;
         _n=initialState.size();
         _m=initialState[0].size();
         matrices=vector<vector<vector<int>>>(2, initialState);
-        //TODO: if less than 2 error
         _parallelism=parallelism;
         _nIterations=nIterations;
         _ranges=vector<segment>(_parallelism);
@@ -210,7 +209,7 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
 }
 
 //Simpler rule Taken from Game of Life by Conways
-int rule(int s, vector<int*> vect){
+int rule(int s, vector<int*>& vect){
     int sum = 0;
     for(int i=0; i<vect.size();i++)
     {
@@ -249,7 +248,7 @@ int main(int argc, char *argv[]){
     vector<int> states = vector<int>(2);
     states[0]=0;
     states[1]=255;
-    function<int(int,vector<int*>)> f = rule;
+    function<int(int,vector<int*>&)> f = rule;
     CellularAutomata mcA(matrix, f,
         iter,
         states,
