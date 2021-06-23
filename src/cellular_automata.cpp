@@ -42,7 +42,8 @@ class CellularAutomata{
     vector<int> _states;
     Barrier2 b;
     vector<vector<vector<int>>> collectorBuffer;
-
+    vector<vector<int*>> neighbors;
+    vector<CImg<unsigned char>> images;
 
     void buffer_init()  {
         //initialization of the buffers
@@ -101,7 +102,7 @@ class CellularAutomata{
                     int o=0;
                     for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
                         int currState=matrices[index][curr.first][curr.second];
-                        vector<int*> neighbors=getNeighbors(curr, index);
+                        vector<int*> neighbors=getNeighbors(curr, index,i);
                         matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
                         collectorBuffer[i][j][o++]=( matrices[!index][curr.first][curr.second]); 
                     }
@@ -119,12 +120,12 @@ class CellularAutomata{
         int start=i*nprint;
         int end= min(int(_nIterations), (int(i)+1) * nprint);
         for(int k=start; k<end; k++){
-            CImg<unsigned char> img(_n,_m); //create new image                    
+            //CImg<unsigned char> img(_n,_m); //create new image                    
             int c=0;
             for (int j = 0; j < _parallelism; j++) { //for each worker
                 for (int h=0;h<collectorBuffer[j][k].size();h++) { 
                     //for each item in the buffer of the kth iteration of thread i
-                    img(c/_m,c%_m)=_states[collectorBuffer[j][k][h]];
+                    images[i](c/_m,c%_m)=_states[collectorBuffer[j][k][h]];
                     c++; 
                 }
             }    
@@ -132,7 +133,7 @@ class CellularAutomata{
             char b[filename.size()+1];
             strcpy(b, filename.c_str());
             //img.resize(1000,1000); //possibility to resize the image
-            img.save_png(b);
+            images[i].save_png(b);
         }
     }
 
@@ -144,8 +145,8 @@ class CellularAutomata{
         pair.second=j;
     }
 
-    vector<int*> getNeighbors(pair<int,int> centre_index, bool index){
-        vector<int*> neighborhood(8);
+    vector<int*> getNeighbors(pair<int,int> centre_index, bool index, int h){
+        //vector<int*> neighborhood(8);
         int neigh_num = 0;
     
         int n = _n;
@@ -162,12 +163,12 @@ class CellularAutomata{
                 int za = (((z % m) + m) % m);
                 if (qa != i || za != j) {
                     //matrix[qa][za] = 1; //only for test
-                    neighborhood[neigh_num++] = &(matrices[index][qa][za]);
+                    neighbors[h][neigh_num++] = &(matrices[index][qa][za]);
 
                 }
             }
         }
-        return neighborhood;
+        return neighbors[h];
     }
 
     public:
@@ -183,6 +184,8 @@ class CellularAutomata{
         _ranges=vector<segment>(_parallelism);
         b=Barrier2(_parallelism);
         collectorBuffer= vector<vector<vector<int>>>(_parallelism, vector<vector<int>>(_nIterations));
+        neighbors = vector<vector<int*>>(parallelism,vector<int*>(8));
+        images = vector<CImg<unsigned char>>(_nIterations, CImg<unsigned char>(_n,_m));
         computeRanges();
         buffer_init();
     }
