@@ -23,31 +23,32 @@
 using namespace std;
 using namespace cimg_library;
 
-
+//Struct that represent the segment of cells assigned to a worker
 struct segment{
     pair<int, int> start;
     pair<int, int> end;
     int size;
 };
 
+//Implementation of Cellular Automata with FastFlow framework
 class CellularAutomata{
     
-    size_t _n;
-    size_t _m;
-    vector<vector<vector<int>>> matrices;   
-    function<int(int, vector<int*>)> _rule;
-    size_t _parallelism;
-    size_t _nIterations;
+    size_t _n; //number of rows
+    size_t _m; //number of columns
+    vector<vector<vector<int>>> matrices; //the matrices      
+    function<int(int, vector<int*>)> _rule; //rule to be applied at each iteration
+    size_t _parallelism; //parDegree
+    size_t _nIterations; //number of iteration
 
-    vector<segment> _ranges;
+    vector<segment> _ranges; //list of segment
 
-    ff::ParallelFor* pf;
+    ff::ParallelFor* pf; //Parallel for reference
     
-    vector<vector<vector<int>>> collectorBuffer;
-    vector<int> _states;
-    vector<vector<int*>> neighbors;
-    vector<CImg<unsigned char>> images;
-
+    vector<vector<vector<int>>> collectorBuffer; //Buffer for collecting the list of segment at each iteration
+    vector<int> _states; //the list of the states possibly assigned at eaach cell
+    vector<vector<int*>> neighbors; //list of neighborhoods to assign for each worker
+    vector<CImg<unsigned char>> images; //the list of the images, one for each iteration
+    
 
     void buffer_init()  {
         //initialization of the buffers
@@ -96,28 +97,32 @@ class CellularAutomata{
         }
     }
 
+    //The core of the Framework Spawn the nw thread, that make the computation.
     void spawnWorkers(){
         bool b=0;
+        //First cycle on iteration by launching more time the ff parallel for, by reusing the same
+        //threads and make the synchronization automatically at the end of the parfor.
         for(int f=0;f<_nIterations;f++){
             (*pf).parallel_for_static(0,_parallelism,1,0,[=](const long i) {                
-                segment r=_ranges[i];
+                segment r=_ranges[i]; //Get is segment from the ranges list
                 int o=0;                   
                     for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
-                            int currState=matrices[b][curr.first][curr.second];
-                            vector<int*> neighbors=getNeighbors(curr, b, i);                        
-                            matrices[!b][curr.first][curr.second]=_rule(currState, neighbors);                           
-                            collectorBuffer[i][f][o++] = matrices[!b][curr.first][curr.second]; 
+                            int currState=matrices[b][curr.first][curr.second]; //get current cell state
+                            vector<int*> neighbors=getNeighbors(curr, b, i); //get the neighborhoods                         
+                            matrices[!b][curr.first][curr.second]=_rule(currState, neighbors); //write on the other matrix the result value by appling the rule                           
+                            collectorBuffer[i][f][o++] = matrices[!b][curr.first][curr.second]; //write on buffer the new cell value
                     } 
                                         
             },_parallelism);
-            b=!b;
+            b=!b; //change the index of the matrix
         }
+        //After computing the iteration, we launch another parallel for, this time on the image loop.
         (*pf).parallel_for_static(0,_nIterations,1,0,[=](const long i) {          
                     int c=0;
                     for (int j = 0; j < _parallelism; j++) { //for each worker
                         for (int h=0;h< collectorBuffer[j][i].size(); h++) { 
                             //for each item in the buffer of the kth iteration of thread i
-                            images[i](c/_m,c%_m)=_states[collectorBuffer[j][i][h]];
+                            images[i](c/_m,c%_m)=_states[collectorBuffer[j][i][h]]; //collector buffer shape (nthread, iteration, segment)
                             c++; 
                         }
                     }    
@@ -189,7 +194,8 @@ class CellularAutomata{
 
 
 void init_matrix(vector<vector<int>>& matrix, int n, int m)
-{
+{    
+    srand(0); //fix the seed for testing
     for(int i=0;i<n;i++){
         for(int j=0;j<m;j++){
            int v1 = rand() % 10;
@@ -203,6 +209,7 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
     }
 }
 
+//Simpler rule Taken from Game of Life by Conways
 int rule(int s, vector<int*> vect){
     int sum = 0;
     for(int i=0; i<vect.size();i++)

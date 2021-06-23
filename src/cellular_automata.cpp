@@ -22,27 +22,29 @@
 using namespace std;
 using namespace cimg_library;
 
+//Struct that represent the segment of cells assigned to a worker
 struct segment{
     pair<int, int> start;
     pair<int, int> end;
     int size;
 };
 
+//Class that implement the Cellular automata modelling paradigm.
 class CellularAutomata{
     
-    size_t _n;
-    size_t _m;
-    vector<vector<vector<int>>> matrices;    
-    function<int(int, vector<int*>)> _rule;
-    size_t _parallelism;
-    size_t _nIterations;
-    vector<thread> _workers;
-    vector<segment> _ranges;
-    vector<int> _states;
-    Barrier2 b;
-    vector<vector<vector<int>>> collectorBuffer;
-    vector<vector<int*>> neighbors;
-    vector<CImg<unsigned char>> images;
+    size_t _n; //number of rows
+    size_t _m; //number of columns
+    vector<vector<vector<int>>> matrices; //the matrices    
+    function<int(int, vector<int*>)> _rule; //rule to be applied at each iteratio
+    size_t _parallelism; //parDegree
+    size_t _nIterations; //number of iteration
+    vector<thread> _workers; //list of workers
+    vector<segment> _ranges; //list of segment
+    vector<int> _states; //the list of the states possibly assigned at eaach cell
+    Barrier2 b; //Barrier object
+    vector<vector<vector<int>>> collectorBuffer; //Buffer for collecting the list of segment at each iteration
+    vector<vector<int*>> neighbors; //list of neighborhoods to assign for each worker
+    vector<CImg<unsigned char>> images; //the list of the images, one for each iteration
 
     void buffer_init()  {
         //initialization of the buffers
@@ -77,7 +79,7 @@ class CellularAutomata{
             int endj = (((j+ wl_blocco.second) % int(_m))+int(_m))% int(_m); //ending J 
             int carry = (double(j+ wl_blocco.second) / double(_m)); //carry as number of remaining cells
             int endi = (i + carry + wl_blocco.first); //ending i
-            if (endi >= _n) { //foundamental 
+            if (endi >= _n) { //the last range end int the final position of the matrix 
                 endi = _n - 1;
                 endj = _m - 1;
             }
@@ -95,31 +97,30 @@ class CellularAutomata{
     void spawnWorkers(){
         for(size_t i=0; i<_parallelism; i++){
             _workers[i]=thread([=](){
-                segment r=_ranges[i];
+                segment r=_ranges[i]; //Get is segment from the ranges list
                 bool index=0;
-                for(size_t j=0; j<_nIterations; j++){
+                for(size_t j=0; j<_nIterations; j++){ //for each iteration
                     int o=0;
-                    for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
-                        int currState=matrices[index][curr.first][curr.second];
-                        vector<int*> neighbors=getNeighbors(curr, index,i);
-                        matrices[!index][curr.first][curr.second]=_rule(currState, neighbors);
-                        collectorBuffer[i][j][o++]=( matrices[!index][curr.first][curr.second]); 
+                    for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){ //for each cell assigned by the segment                        
+                        int currState=matrices[index][curr.first][curr.second]; //get current cell state
+                        vector<int*> neighbors=getNeighbors(curr, index,i); //get the neighborhoods
+                        matrices[!index][curr.first][curr.second]=_rule(currState, neighbors); //write on the other matrix the result value by appling the rule
+                        collectorBuffer[i][j][o++]=( matrices[!index][curr.first][curr.second]); //write on buffer the new cell value
                     }
-                    index=!index;
-                    b.wait(); //wait on barrier
+                    index=!index; //change the index of the matrix
+                    b.wait(); //synchronize on the barrier
                 }
                 writeImageParallel(i);                
             });
         }
     }
 
-
+    //Method for making the writing of image parallel
     void writeImageParallel(int i){
-        int nprint=ceil(double(_nIterations) / double(_parallelism));
-        int start=i*nprint;
-        int end= min(int(_nIterations), (int(i)+1) * nprint);
-        for(int k=start; k<end; k++){
-            //CImg<unsigned char> img(_n,_m); //create new image                    
+        int nprint=ceil(double(_nIterations) / double(_parallelism)); //compute the number of images per worker
+        int start=i*nprint; //starting iteration
+        int end= min(int(_nIterations), (int(i)+1) * nprint); //ending iteration
+        for(int k=start; k<end; k++){     //for each frames to be created by this worker              
             int c=0;
             for (int j = 0; j < _parallelism; j++) { //for each worker
                 for (int h=0;h<collectorBuffer[j][k].size();h++) { 
@@ -132,7 +133,7 @@ class CellularAutomata{
             char b[filename.size()+1];
             strcpy(b, filename.c_str());
             //img.resize(1000,1000); //possibility to resize the image
-            images[i].save_png(b);
+            images[i].save_png(b); //save the image under the folder src/frames
         }
     }
 
@@ -145,7 +146,6 @@ class CellularAutomata{
     }
 
     vector<int*> getNeighbors(pair<int,int> centre_index, bool index, int h){
-        //vector<int*> neighborhood(8);
         int neigh_num = 0;
     
         int n = _n;
@@ -161,7 +161,6 @@ class CellularAutomata{
                 int qa = (((q % n) + n) % n);
                 int za = (((z % m) + m) % m);
                 if (qa != i || za != j) {
-                    //matrix[qa][za] = 1; //only for test
                     neighbors[h][neigh_num++] = &(matrices[index][qa][za]);
 
                 }

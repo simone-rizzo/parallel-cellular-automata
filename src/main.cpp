@@ -11,10 +11,9 @@
 #include <functional>
 #include "./cellular_automata.cpp"
 
-//#include "../fastflow/ff/ff.hpp"
-
 using namespace std;
 
+//Simpler rule Taken from Game of Life by Conways
 int rule(int s, vector<int*> vect){
     int sum = 0;
     for(int i=0; i<vect.size();i++)
@@ -38,7 +37,7 @@ int rule(int s, vector<int*> vect){
 
 void init_matrix(vector<vector<int>>& matrix, int n, int m)
 {
-    srand(0);
+    srand(0); //fix the seed for testing
     for(int i=0;i<n;i++){
         for(int j=0;j<m;j++){
            int v1 = rand() % 10;

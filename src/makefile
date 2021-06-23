@@ -1,5 +1,5 @@
 
-FF_ROOT	= -I/mnt/t/Programmi/fastflow-master
+FF_ROOT	= -I/mnt/t/Programmi/fastflow-master # leave empty if FastFlow is installed in the system in the main path for libraries
 LDFLAGS	= -pthread -lX11 -lpng
 CXX = g++-10
 
