@@ -7,7 +7,6 @@
 #include <cmath>
 #include <mutex>
 #include <condition_variable>
-#include "barrier.cpp"
 #include <algorithm>
 #include <string>
 #include <cstring>

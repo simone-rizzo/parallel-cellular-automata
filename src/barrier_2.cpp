@@ -31,7 +31,7 @@ public:
                 return !(b1 != 0 && b1 != max);
                 });
             if (b1 == max) {
-                //cout << "Sono l'ultimo thread: " << i << endl;
+                //cout << "I'm the last thread: " << i << endl;
                 b1 = 0;
                 (*b1Condition).notify_all();
             }
@@ -43,7 +43,7 @@ public:
                 return !(b2 != 0 && b2 != max);
                 });
             if (b2 == max) {
-                //cout << "Sono l'ultimo thread: " << i << endl;
+                //cout << "I'm the last thread: " << i << endl;
                 b2 = 0;
                 (*b2Condition).notify_all();
             }

@@ -5,10 +5,12 @@
             "label": "C/C++: g++-10 build active file",
             "command": "/usr/bin/g++-10",
             "args": [
-                "-g",
-                "-pthread",
-                "-I/mnt/c/Users/Simone/Documents/parallel-cellular-automata/fastflow",
+                "-g",                
                 "${file}",
+                "-pthread",
+                "-I/mnt/t/Programmi/fastflow-master",
+                "-lpng",
+                "-lX11",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],

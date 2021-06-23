@@ -1,5 +1,5 @@
 import commands
-import numpy as np
+# import numpy as np
 
 values = []
 ripetition = 5
