@@ -9,17 +9,12 @@
 #include <condition_variable>
 #include <chrono>
 #include <functional>
-#include "./cellular_automata.cpp"
+#include "./cellular_automata2.cpp"
 
 using namespace std;
 
 //Simpler rule Taken from Game of Life by Conways
-int rule(int s, vector<int>& vect){
-    int sum = 0;
-    for(int i=0; i<vect.size();i++)
-    {
-        sum += vect[i];
-    }
+int rule(int s, int sum){
     if(sum==3)
     {
         return 1;
@@ -35,50 +30,34 @@ int rule(int s, vector<int>& vect){
     return 0;
 }
 
-void init_matrix(vector<vector<int>>& matrix, int n, int m)
-{
-    srand(0); //fix the seed for testing
-    for(int i=0;i<n;i++){
-        for(int j=0;j<m;j++){
-           int v1 = rand() % 10;
-           if(v1>6){
-               matrix[i][j]=1;
-           } 
-           else{
-               matrix[i][j]=0;
-           }
-        }
-    }
-}
-
 int square__init(){
     return (std::rand())%2;
 }
 
 int main(int argc, char* argv[]){
-    utimer tp("completion time");
     int n=400;
     int m=400;
-    int iter = 400;
-    int nw = 8;
+    int iter = 20;
+    int nw = 1;
     if(argc>1){
         n = atoi(argv[1]);
         m = atoi(argv[2]);
         iter = atoi(argv[3]);
         nw = atoi(argv[4]);
     }
-    
-    std::vector<std::vector<int>>  matrices(2, std::vector<int> (n*m) );  
-    std::generate(matrices[0].begin(), matrices[0].end(), square__init); 
+    std::srand(0);
+    vector<int> matrix (n*m);  
+    std::generate(matrix.begin(), matrix.end(), square__init); 
     vector<int> states = vector<int>(2);
     states[0]=0;
     states[1]=255;
-    function<int(int,vector<int>&)> f = rule;
-    CellularAutomata mcA(matrices,n,m, f,
+    function<int(int,int)> f = rule;
+    CellularAutomata mcA(matrix,n,m, f,
         iter,
         states,
         nw
-    );
+    );       
+    utimer tp("completion time");
     mcA.run();
     return 0;
 
