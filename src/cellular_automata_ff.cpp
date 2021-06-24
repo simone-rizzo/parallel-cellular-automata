@@ -63,7 +63,7 @@ class CellularAutomata{
         return (Tp(0) < val) - (val < Tp(0));
     }
 
-    int getRangeSize(pair<int,int> start, pair<int,int> end){
+    int getRangeSize(pair<int,int>& start, pair<int,int> end){
         int low = end.second - start.second;
         if (low < 0) --end.first;
         int high = end.first - start.first;
@@ -87,8 +87,9 @@ class CellularAutomata{
             if (endi >= _n) { //the last range end int the final position of the matrix 
                 endi = _n - 1;
                 endj = _m - 1;
-            }
-            _ranges[k] = {index, make_pair(endi, endj), getRangeSize(index, make_pair(endi, endj))}; // write the ranges of theads
+            }            
+            auto end = make_pair(endi, endj);
+            _ranges[k] = {index, make_pair(endi, endj), getRangeSize(index, end)}; // write the ranges of theads
             carry=0;
             index.second = (((endj+1)% int(_m))+int(_m))%int(_m); //move to the next cell, for the new range start
             carry = (endj+1) / int(_m);
@@ -107,9 +108,9 @@ class CellularAutomata{
                 segment r=_ranges[i]; //Get is segment from the ranges list
                 int o=0;                   
                     for(pair<int, int> curr=r.start; curr <= r.end; increment(curr)){                        
-                            int currState=matrices[b][curr.first][curr.second]; //get current cell state
-                            vector<int*> neighbors=getNeighbors(curr, b, i); //get the neighborhoods                         
-                            matrices[!b][curr.first][curr.second]=_rule(currState, neighbors); //write on the other matrix the result value by appling the rule                           
+                            //int currState=matrices[b][curr.first][curr.second]; //get current cell state
+                            getNeighbors(curr, b, i); //get the neighborhoods                         
+                            matrices[!b][curr.first][curr.second]=_rule(matrices[b][curr.first][curr.second], neighbors[i]); //write on the other matrix the result value by appling the rule                           
                             collectorBuffer[i][f][o++] = matrices[!b][curr.first][curr.second]; //write on buffer the new cell value
                     } 
                                         
@@ -120,9 +121,9 @@ class CellularAutomata{
         (*pf).parallel_for_static(0,_nIterations,1,0,[=](const long i) {          
                     int c=0;
                     for (int j = 0; j < _parallelism; j++) { //for each worker
-                        for (int h=0;h< collectorBuffer[j][i].size(); h++) { 
+                        for (auto &h:collectorBuffer[j][i]) { 
                             //for each item in the buffer of the kth iteration of thread i
-                            images[i](c/_m,c%_m)=_states[collectorBuffer[j][i][h]]; //collector buffer shape (nthread, iteration, segment)
+                            images[i](c/_m,c%_m)=_states[h]; //collector buffer shape (nthread, iteration, segment)
                             c++; 
                         }
                     }    
@@ -142,7 +143,7 @@ class CellularAutomata{
         pair.second=j;
     }
 
-    vector<int*> getNeighbors(pair<int,int> centre_index, int b, int h){
+    void getNeighbors(pair<int,int> centre_index, int b, int h){
         int neigh_num = 0;
     
         int n = _n;
@@ -162,7 +163,6 @@ class CellularAutomata{
                 }
             }
         }
-        return neighbors[h];
     }
 
     public:

@@ -24,7 +24,7 @@ using namespace cimg_library;
     size_t _nIterations;
     
     vector<vector<vector<int>>> matrices;
-
+    vector<int*> neighborhood(8);   
 
 int rule(int s, vector<int*>& vect){
     int sum = 0;
@@ -64,14 +64,11 @@ void init_matrix(vector<vector<int>>& matrix, int n, int m)
     }
 }
 
-vector<int*> getNeighbors(pair<int,int> centre_index, bool index){
-    vector<int*> neighborhood(8);
+void getNeighbors(int i,int j, bool index){
     int neigh_num = 0;
 
     int n = _n;
     int m = _m;
-    int i = centre_index.first;
-    int j = centre_index.second;
 
     int init_i = (((i - 1) % n)+n)%n;
     int init_j = (((j - 1) % m)+m)%m;
@@ -87,7 +84,6 @@ vector<int*> getNeighbors(pair<int,int> centre_index, bool index){
             }
         }
     }
-    return neighborhood;
 }
 
 void writeImage(int index, int iteration){
@@ -123,8 +119,8 @@ int main(int argc, char *argv[]){
     for(int i=0;i<_nIterations;i++){
         for(int n=0;n<_n;n++){
             for(int m=0;m<_m;m++){
-                vector<int*> neighbors = getNeighbors(make_pair(n,m),index);
-                int new_state = rule(matrices[index][n][m], neighbors);
+                getNeighbors(n,m,index);
+                int new_state = rule(matrices[index][n][m], neighborhood);
                 matrices[!index][n][m] = new_state;
             }
         }
