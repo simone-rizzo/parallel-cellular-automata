@@ -15,13 +15,12 @@
 #include "./cimg/CImg.h"
 #include <cstdint>
 #include <cassert>
-#include "barrier_2.cpp"
-
 #include "utimer.cpp"
-#include <ff/barrier.hpp>
+
+//#define PARALLEL_WRITE
+#define SEQUENTIAL_WRITE
 using namespace std;
 using namespace cimg_library;
-
 
 //Class that implement the Cellular automata modelling paradigm.
 class CellularAutomata{
@@ -38,10 +37,16 @@ class CellularAutomata{
     int _nIter; //number of columns
     int _parallelism; //parDegree
     vector<int> _states; //the list of the states possibly assigned at eaach cell
-    Barrier2 b; //Barrier object
     vector<thread> _workers; //list of workers
-    vector<RANGE> ranges;
-    ff::ffBarrier ba; //the FF barrier
+    vector<RANGE> ranges; //list of ranges to be assigned at each worker
+    mutex bMutex; 
+    int count;
+    bool release = 0;
+    #ifdef PARALLEL_WRITE
+    vector<CImg<unsigned char>> images;
+    #endif
+
+
 
     void update_cell(int j, std::vector<int> &board, std::vector<int> &previus_board){
         int row = j/_m;
@@ -76,34 +81,78 @@ class CellularAutomata{
         _parallelism = parallelism;
         _states = states;
         ranges= vector<RANGE>(parallelism);
-        _workers=vector<thread>(_parallelism);        
-        b=Barrier2(_parallelism);
-        compute_ranges();
-        
-        ba.barrierSetup(_parallelism);
+        _workers=vector<thread>(_parallelism);   
+        compute_ranges();     
+        count = 0;
+        #ifdef PARALLEL_WRITE
+        images = vector<CImg<unsigned char>>(nIterations,CImg<unsigned char>(_n,_m));
+        #endif
     }
 
     public:
     void run(){       
         for(int i=0;i<_parallelism;i++){    
-            _workers[i]=thread([=](int ini, int end){                    
+            _workers[i]=thread([=](int ini, int end){
+                bool localsense = 0;                      
                 bool index=0;     
                 for(int j=0;j<_nIter;j++){                    
                     for(int k = ini; k < end; k++){
                         update_cell(k, matrices[!index], matrices[index]);                        
-                    }                                     
-                    ba.doBarrier(i);                  
-                    index=!index;
+                        //parallel write on images
+                        #ifdef PARALLEL_WRITE
+                        images[j](k/_m, k%_m) = _states[matrices[!index][k]];
+                        #endif
+                    }     
+                    //Barrier -------------------
+                    localsense = !localsense;            
+                    unique_lock<mutex> lock(bMutex);
+                    count++;
+                    if(count==_parallelism){
+                        count=0;
+                        release=localsense;
+                    }
+                    lock.unlock();
+                    while(release!=localsense){}
+                    //End barrier ---------------
+
+                    index=!index; //change the index of the matrix
+
+                    //sequential write
+                    #ifdef SEQUENTIAL_WRITE
+                    if(i==0)
+                    {
+                        CImg<unsigned char> img(_n,_m); //create new image
+                        for(int i=0; i<_n*_m; i++){
+                                img(i/_m,i%_m)=_states[matrices[index][i]];
+                        }
+                        string filename="./frames/"+to_string(j)+".png";
+                        char bb[filename.size()+1];
+                        strcpy(bb, filename.c_str());
+                        img.save_png(bb);
+                    }
+                    #endif
                 }
+                //parallel write
+                #ifdef PARALLEL_WRITE
+                int nprint=ceil(double(_nIter) / double(_parallelism));
+                int _start=i*nprint;
+                int _end= min(int(_nIter), (int(i)+1) * nprint);
+                for(int k=_start; k<_end; k++){
+                    string filename="./frames/"+to_string(k)+".png";
+                    char bb[filename.size()+1];
+                    strcpy(bb, filename.c_str());
+                    images[k].save(bb);
+                }
+                #endif
+                
             }, ranges[i].start, ranges[i].end);
         }
+        
         
         for (int i = 0; i < _parallelism; i++){
                 _workers[i].join();
         }
    
-    }
-                  
-                    
+    }    
 
 };
