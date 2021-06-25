@@ -17,8 +17,9 @@
 #include <cassert>
 #include "utimer.cpp"
 
-//#define PARALLEL_WRITE
-#define SEQUENTIAL_WRITE
+//#define PARALLEL_WRITE //writes the images in parallel
+//#define LAST_WRITE //write the result image
+
 using namespace std;
 using namespace cimg_library;
 
@@ -116,21 +117,6 @@ class CellularAutomata{
                     //End barrier ---------------
 
                     index=!index; //change the index of the matrix
-
-                    //sequential write
-                    #ifdef SEQUENTIAL_WRITE
-                    if(i==0)
-                    {
-                        CImg<unsigned char> img(_n,_m); //create new image
-                        for(int i=0; i<_n*_m; i++){
-                                img(i/_m,i%_m)=_states[matrices[index][i]];
-                        }
-                        string filename="./frames/"+to_string(j)+".png";
-                        char bb[filename.size()+1];
-                        strcpy(bb, filename.c_str());
-                        img.save_png(bb);
-                    }
-                    #endif
                 }
                 //parallel write
                 #ifdef PARALLEL_WRITE
@@ -152,6 +138,18 @@ class CellularAutomata{
         for (int i = 0; i < _parallelism; i++){
                 _workers[i].join();
         }
+
+        //sequential write
+        #ifdef LAST_WRITE        
+        CImg<unsigned char> img(_n,_m); //create new image
+        for(int i=0; i<_n*_m; i++){
+                img(i/_m,i%_m)=_states[matrices[(_nIter%2)][i]];
+        }
+        string filename="./frames/final_frame.png";
+        char bb[filename.size()+1];
+        strcpy(bb, filename.c_str());
+        img.save_png(bb);        
+        #endif
    
     }    
 

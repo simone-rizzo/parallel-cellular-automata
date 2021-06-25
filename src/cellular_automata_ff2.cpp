@@ -24,6 +24,9 @@
 using namespace std;
 using namespace cimg_library;
 
+//#define PARALLEL_WRITE //writes the images in parallel
+//#define LAST_WRITE //write the result image
+
 
 //Class that implement the Cellular automata modelling paradigm.
 class CellularAutomata{
@@ -44,6 +47,9 @@ class CellularAutomata{
     vector<RANGE> ranges;
 
     ff::ParallelFor* pf; //Parallel for reference
+    #ifdef PARALLEL_WRITE
+    vector<CImg<unsigned char>> images;
+    #endif
 
 
     void update_cell(int j, std::vector<int> &board, std::vector<int> &previus_board){
@@ -83,7 +89,10 @@ class CellularAutomata{
         pf = new ff::ParallelFor(_parallelism);        
         (*pf).disableScheduler(true); //disabled        
         ranges= vector<RANGE>(parallelism);        
-        compute_ranges();        
+        compute_ranges(); 
+        #ifdef PARALLEL_WRITE
+        images = vector<CImg<unsigned char>>(nIterations,CImg<unsigned char>(_n,_m));
+        #endif       
     }
 
     public:
@@ -95,23 +104,37 @@ class CellularAutomata{
                 for(int j=0;j<_nIter;j++){ 
                     for(int k = ranges[i].start; k < ranges[i].end; k++){
                         update_cell(k, matrices[!b], matrices[b]);
+                        #ifdef PARALLEL_WRITE
+                        images[j](k/_m, k%_m) = _states[matrices[!b][k]];
+                        #endif
                     }                      
-                    ba.doBarrier(thid);
-                    b=!b; //chenge the index of the matrix
-                    /*if(thid==0)
-                    {
-                        CImg<unsigned char> img(_n,_m); //create new image
-                        for(int i=0; i<_n*_m; i++){
-                                img(i/_m,i%_m)=_states[matrices[b][i]];
-                        }
-                        string filename="./frames/"+to_string(j)+".png";
-                        char bb[filename.size()+1];
-                        strcpy(bb, filename.c_str());
-                        img.save_png(bb);
-                    }*/
-                }        
+                    ba.doBarrier(thid); //Barrier
+                    b=!b; //change the index of the matrix
+                }
+                #ifdef PARALLEL_WRITE
+                int nprint=ceil(double(_nIter) / double(_parallelism));
+                int _start=thid*nprint;
+                int _end= min(int(_nIter), (int(thid)+1) * nprint);
+                for(int k=_start; k<_end; k++){
+                    string filename="./frames/"+to_string(k)+".png";
+                    char bb[filename.size()+1];
+                    strcpy(bb, filename.c_str());
+                    images[k].save(bb);
+                }
+                #endif
+
             },_parallelism);
-            
+
+            #ifdef LAST_WRITE        
+            CImg<unsigned char> img(_n,_m); //create new image
+            for(int i=0; i<_n*_m; i++){
+                    img(i/_m,i%_m)=_states[matrices[(_nIter%2)][i]];
+            }
+            string filename="./frames/final_frame.png";
+            char bb[filename.size()+1];
+            strcpy(bb, filename.c_str());
+            img.save_png(bb);        
+            #endif
     }
 };
 
@@ -136,6 +159,10 @@ int square__init(){
 }
 
 int main(int argc, char* argv[]){
+    if(argc != 5) {
+        std::cout << "Usage is: " << argv[0] << " N M number_step number_worker" << std::endl;
+        return(-1);
+    }
     int n=100;
     int m=100;
     int iter = 10;

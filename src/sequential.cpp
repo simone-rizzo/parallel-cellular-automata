@@ -48,14 +48,15 @@ void update_cell(int j,int _n,int _m, std::vector<int> &board, std::vector<int> 
 
 int main(int argc, char * argv[]) {
 
-    if(argc != 4) {
-        std::cout << "Usage is: " << argv[0] << " N M number_step seed" << std::endl;
+    if(argc != 5) {
+        std::cout << "Usage is: " << argv[0] << " N M number_step bool_write_images" << std::endl;
         return(-1);
     }
 
     int N = atoi(argv[1]);
     int M = atoi(argv[2]);
     int num_steps = atoi(argv[3]);
+    int write_img = atoi(argv[4]);
     srand(0);
 
     int index = 0; 
@@ -68,14 +69,16 @@ int main(int argc, char * argv[]) {
             update_cell(j, N, M, boards[!index], boards[index]);
         }        
         index = !index;//previus_board = board;
-        /*CImg<unsigned char> img(N,M); //create new image
-        for(int p=0; p<N*M; p++){
-            img(p/M,p%M)=boards[index][p]>0?255:0;
+        if(write_img){
+            CImg<unsigned char> img(N,M); //create new image
+            for(int p=0; p<N*M; p++){
+                img(p/M,p%M)=boards[index][p]>0?255:0;
+            }
+            string filename="./frames/"+to_string(i)+".png";
+            char b[filename.size()+1];
+            strcpy(b, filename.c_str());
+            img.save_png(b);
         }
-        string filename="./frames/"+to_string(i)+".png";
-        char b[filename.size()+1];
-        strcpy(b, filename.c_str());
-        img.save_png(b);*/
     }
     return(0);
 }
