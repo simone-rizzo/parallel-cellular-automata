@@ -31,21 +31,27 @@ int rule(int s, int sum){
 }
 
 int square__init(){
-    return (std::rand())%2;
+    return (rand())%2;
 }
 
 int main(int argc, char* argv[]){
+    if(argc != 5) {
+        std::cout << "Usage is: " << argv[0] << " N M number_step number_worker" << std::endl;
+        return(-1);
+    }
     int n=400;
     int m=400;
-    int iter = 20;
+    int iter = 10;
     int nw = 1;
+
     if(argc>1){
         n = atoi(argv[1]);
         m = atoi(argv[2]);
         iter = atoi(argv[3]);
         nw = atoi(argv[4]);
     }
-    std::srand(0);
+    
+    srand(0);
     vector<int> matrix (n*m);  
     std::generate(matrix.begin(), matrix.end(), square__init); 
     vector<int> states = vector<int>(2);
