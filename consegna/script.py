@@ -2,10 +2,11 @@ import commands
 
 values = []
 max_cores = 256
-names = ["main_parallel", "cellular_ff", "cellular_ff_nopinning"]
+names = ["main_parallel", "cellular_ff"]
 # points = [1,2,4,6,8,12,24,48,64,127,150,200,250,255]
 ripetition = 5
 for n in names:
+    values = []
     for i in range(1,max_cores+1):
         media=0
         for j in range(ripetition):

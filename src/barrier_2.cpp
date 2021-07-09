@@ -11,53 +11,54 @@
 
 using namespace std;
 
-/*
-    Implementation of the Barrier, for making the synchronization of the worker at the end of each 
-    iteration.
+/**
+* @brief Represents a CPU thread barrier
+* @note The barrier automatically resets after all threads are synced
 */
+class Barrier
+{
+    private:
+        std::mutex m_mutex;
+        std::condition_variable m_cv;
 
-class Barrier2{
-    int b1=0; //first counter
-    mutex *b1Mutex = new mutex();
-    condition_variable* b1Condition=new condition_variable();
-    int b2=0; //second counter
-    mutex *b2Mutex = new mutex();
-    condition_variable* b2Condition=new condition_variable();
-    int max=0; //number of maximal worker
+        size_t m_count;
+        size_t m_initial;
 
-    
+        enum State : unsigned char {
+            Up, Down
+        };
+        State m_state;
+
 public:
-    void wait(){
+    explicit Barrier(std::size_t count) : m_count{ count }, m_initial{ count }, m_state{ State::Down } { }
+
+    /// Blocks until all N threads reach here
+    void Sync()
+    {
+        std::unique_lock<std::mutex> lock{ m_mutex };
+
+        if (m_state == State::Down)
         {
-            unique_lock<mutex> lock(*b1Mutex); //take the first lock
-            //counter increment
-            b1++;
-            (*b1Condition).wait(lock, [&]() { //wait coidition
-                return !(b1 != 0 && b1 != max);
-                });
-            if (b1 == max) { //the last thread update the counter and notify all the threads
-                //cout << "I'm the last thread: " << i << endl;
-                b1 = 0;
-                (*b1Condition).notify_all();
+            // Counting down the number of syncing threads
+            if (--m_count == 0) {
+                m_state = State::Up;
+                m_cv.notify_all();
+            }
+            else {
+                m_cv.wait(lock, [this] { return m_state == State::Up; });
             }
         }
-        //The same procedure is repeted here. This garantee that the all thread have finished theire work.
+
+        else // (m_state == State::Up)
         {
-            unique_lock<mutex> lock(*b2Mutex);
-            b2++;
-            (*b2Condition).wait(lock, [&]() {
-                return !(b2 != 0 && b2 != max);
-                });
-            if (b2 == max) {
-                //cout << "I'm the last thread: " << i << endl;
-                b2 = 0;
-                (*b2Condition).notify_all();
+            // Counting back up for Auto reset
+            if (++m_count == m_initial) {
+                m_state = State::Down;
+                m_cv.notify_all();
+            }
+            else {
+                m_cv.wait(lock, [this] { return m_state == State::Down; });
             }
         }
     }
-
-    
-    Barrier2(){}
-    Barrier2(int m):max(m){}
-        
-};
+};  

@@ -11,6 +11,7 @@
                 "-I/mnt/t/Programmi/fastflow-master",
                 "-lpng",
                 "-lX11",
+                //"-O3",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],
