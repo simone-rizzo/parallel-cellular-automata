@@ -1,10 +1,13 @@
 
-FF_ROOT	= -I/mnt/t/Programmi/fastflow-master # leave empty if FastFlow is installed in the system in the main path for libraries
+FF_ROOT	= -I/home/kkk/fastflow # leave empty if FastFlow is installed in the system in the main path for libraries
 LDFLAGS	= -pthread -lX11 -lpng -O3 -finline-functions
 CXX = g++
-DEF = #-DLAST_WRITE #-DPARALLEL_WRITE 
+DEF = -DPARALLEL_WRITE 
 
 main: main.cpp
+	$(CXX) main.cpp $(LDFLAGS) $(FF_ROOT)  -o main_parallel
+
+mainpar: main.cpp
 	$(CXX) main.cpp $(LDFLAGS) $(FF_ROOT) $(DEF)  -o main_parallel
 
 seq: sequential.cpp

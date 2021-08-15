@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [],
+            "args": ["100", "100", "100", "4"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -19,6 +19,11 @@
                 {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Enable break on all exceptions",
+                    "text": "catch throw",
                     "ignoreFailures": true
                 }
             ],
