@@ -111,17 +111,27 @@ class CellularAutomata{
                     lock.unlock();
                     while(global!=local){}
                     //End barrier ---------------
-                    
-                    #ifndef PARALLEL_WRITE
+                    /*#ifndef PARALLEL_WRITE
                     if(i==0){
-                        string filename="./frames/"+to_string(j)+".png";
-                        char name[filename.size()+1];
-                        strcpy(name, filename.c_str());
-                        images[j].save(name);
+                            string filename="./frames/"+to_string(j)+".png";
+                            char name[filename.size()+1];
+                            strcpy(name, filename.c_str());
+                            images[j].save(name);
                     }
-                    #endif
+                    #endif*/
+                    
                     index=!index; //change the index of the matrix
                 }
+                #ifndef PARALLEL_WRITE
+                if(i==0){
+                    for(int k=0; k<_nIterations; k++){
+                        string filename="./frames/"+to_string(k)+".png";
+                        char name[filename.size()+1];
+                        strcpy(name, filename.c_str());
+                        images[k].save(name);
+                    }
+                }
+                #endif
                 //parallel write
                 #ifdef PARALLEL_WRITE
                 int nprint=ceil(double(_nIterations) / double(_parallelism));
