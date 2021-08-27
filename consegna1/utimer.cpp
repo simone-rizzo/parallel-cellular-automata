@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
-
+#include <string>
+#include <cstring>
 
 #define START(timename) auto timename = std::chrono::system_clock::now();
 #define STOP(timename,elapsed)  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - timename).count();
@@ -33,9 +34,8 @@ public:
       stop - start;
     auto musec =
       std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-    
-    std::cout << message << " computed in " << musec << " usec " 
-	      << std::endl;
+    std::string s=message + " computed in " + std::to_string(musec) + " usec\n";
+    std::cout << s ;
     if(us_elapsed != NULL)
       (*us_elapsed) = musec;
   }

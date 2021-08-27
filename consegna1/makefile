@@ -3,22 +3,23 @@ FF_ROOT	= -I/home/kkk/fastflow # leave empty if FastFlow is installed in the sys
 PARFLAGS = -pthread 
 LDFLAGS	=  -lX11 -lpng -O3 -finline-functions
 CXX = g++-10 
-DEF = -DPARALLEL_WRITE 
 
-mine: cellular_automata.cpp
-	$(CXX) cellular_automata.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) -o ca
-
-minepar: cellular_automata.cpp
-	$(CXX) cellular_automata.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) $(DEF) -o ca_parallel_write
+mine: mine.cpp
+	$(CXX) mine.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) -o mine
 
 seq: sequential.cpp
 	$(CXX) sequential.cpp $(PARFLAGS) $(LDFLAGS) -o sequential
 
-ff: cellular_automata_ff.cpp
-	$(CXX) cellular_automata_ff.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) -o ff
+ffpar: ff_parfor.cpp
+	$(CXX) ff_parfor.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) -o ff_parfor
 
-ffpar: cellular_automata_ff.cpp
-	$(CXX) cellular_automata_ff.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) $(DEF) -o ff_parallel_write
+fffarm:ff_farm.cpp
+	$(CXX) ff_farm.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) -o ff_farm
 
-clean:
+ffparw: ff_parfor.cpp
+	$(CXX) ff_parfor.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) -o ff_parfor_write
+
+fffarmw:ff_farm.cpp
+	$(CXX) ff_farm.cpp $(PARFLAGS) $(LDFLAGS) $(FF_ROOT) -o ff_farm_write
+
 	
