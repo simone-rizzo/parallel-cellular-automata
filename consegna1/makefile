@@ -8,6 +8,8 @@ TARGETS = mine sequential ff_parfor ff_farm
 $(TARGETS): %: %.cpp
 	$(CXX) $<  $(LDFLAGS) $(FF_ROOT) -o $@
 
+all: $(TARGETS) sequentialw minew ffparw fffarmw
+
 sequentialw: sequential.cpp
 	$(CXX) sequential.cpp $(LDFLAGS) $(IMG) -o sequential_write
 
