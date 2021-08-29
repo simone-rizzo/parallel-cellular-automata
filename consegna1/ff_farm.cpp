@@ -189,7 +189,7 @@ class CellularAutomata{
         (*farm).wrap_around();   // this call creates feedbacks from Workers to the Emitter
         #endif
         #ifndef WIMG
-        firstThird=new firstThirdStage(_nworkers, _nIterations);
+        firstThird=new firstThirdStage(_nworkers);
                
         for(int i=0;i<nworkers;++i) W.push_back(make_unique<secondStage>(_nIterations,
                  ranges,  _n,  _m, matrices, ba, *this));
