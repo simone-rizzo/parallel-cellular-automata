@@ -119,7 +119,7 @@ class CellularAutomata{
                     #endif
                 }                  
                 ba.doBarrier(t); //Barrier
-                #ifndef WIMG
+                #ifdef WIMG
                 if(t==0) {
                     ff_send_out(task);
                 }
