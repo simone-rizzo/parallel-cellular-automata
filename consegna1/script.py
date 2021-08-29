@@ -2,7 +2,7 @@ import commands
 
 values = []
 max_cores = 256
-names = ["main_parallel", "cellular_ff"]
+names = ["mine", "mine_write", "ff_farm", "ff_farm_write", "ff_parfor", "ff_parfor_write"]
 # points = [1,2,4,6,8,12,24,48,64,127,150,200,250,255]
 ripetition = 5
 for n in names:
