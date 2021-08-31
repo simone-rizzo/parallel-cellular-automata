@@ -8,6 +8,8 @@
 #include <mutex>
 #include <algorithm>
 #include <string>
+#include <ff/ff.hpp>
+#include <ff/barrier.hpp>
 #define cimg_use_png
 
 #include "./cimg/CImg.h"
@@ -25,7 +27,7 @@ class CellularAutomata{
         int start;
         int end;
     } range;
-    //ff::ffBarrier ba; //the FF barrier
+    ff::Barrier ba; //the FF barrier
     int _n; //number of rows
     int _m; //number of columns
     vector<vector<T>> matrices; //the two matrices that will rotate
@@ -67,7 +69,7 @@ class CellularAutomata{
         _parallelism = parallelism;
         _workers=vector<thread>(_parallelism);
         ranges= vector<range>(_parallelism);
-        //ba.barrierSetup(_parallelism);
+        ba.barrierSetup(_parallelism);
     }
 
     public:
@@ -109,8 +111,8 @@ class CellularAutomata{
                     }     
 
                     //Barrier -------------------
-                    //ba.doBarrier(i); //Barrier
-                    local = !local;            
+                    ba.doBarrier(i); //Barrier
+                    /*local = !local;            
                     unique_lock<mutex> lock(bMutex);
                     count++;
                     if(count==_parallelism){
@@ -118,7 +120,7 @@ class CellularAutomata{
                         global=local;
                     }
                     lock.unlock();
-                    while(global!=local){}
+                    while(global!=local){}*/
                     
                     index=!index; //change the index of the matrix
                 }

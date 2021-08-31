@@ -48,11 +48,12 @@ class CellularAutomata{
                 matrices[!index][k]=res; 
                 repr(images[j], k/_m, k%_m, res);
                 #endif
+
                 #ifndef WIMG
                 matrices[!index][k]=rule(matrices[index], k, _n, _m);
                 #endif
             }
-            #ifdef WING
+            #ifdef WIMG
             string filename="./frames/"+to_string(j)+".png";
             char name[filename.size()+1];
             strcpy(name, filename.c_str());
@@ -63,7 +64,7 @@ class CellularAutomata{
     }    
 
     void init(){
-        #ifdef WING
+        #ifdef WIMG
         images=vector<CImg<C>>(_nIterations, imgBuilder(_n,_m));
         #endif
     }
