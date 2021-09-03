@@ -14,7 +14,7 @@ sequentialw: sequential.cpp
 	$(CXX) sequential.cpp $(LDFLAGS) $(IMG) -o sequential_write
 
 minew: mine.cpp
-	$(CXX) mine.cpp  $(LDFLAGS) $(IMG) -o mine_write
+	$(CXX) mine.cpp  $(LDFLAGS) $(FF_ROOT) $(IMG) -o mine_write
 
 ffparw: ff_parfor.cpp
 	$(CXX) ff_parfor.cpp  $(LDFLAGS) $(FF_ROOT) $(IMG) -o ff_parfor_write
