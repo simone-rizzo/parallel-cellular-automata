@@ -273,9 +273,11 @@ int main(int argc, char* argv[]){
     std::srand(0);
     vector<int> matrix (n*m);  
     std::generate(matrix.begin(), matrix.end(), random_init);
-    MyCa ca(matrix,n,m, iter, nw);   
-    ca.init();    
+
     utimer tp("completion time");
+    MyCa ca(matrix,n,m, iter, nw);   
+    ca.init();   
+    //utimer tp("run time");
     ca.run();
     return 0;
 
