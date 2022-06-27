@@ -1,4 +1,5 @@
 # parallel-cellular-automata
+## Read the report file pdf.
 
 ### Cellular automata
 A cellular automaton consists of a regular grid of cells, where each cell may be in one of a finite number
